@@ -111,49 +111,23 @@ func (d *Destination) Open(ctx context.Context) error {
 func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, error) {
 	for i, record := range records {
 		messageBody := string(record.Payload.After.Bytes())
-		createdAtTime, err := record.Metadata.GetCreatedAt()
-		if err != nil {
-			return i, err
-		}
-		sourcePlugin, err := record.Metadata.GetConduitSourcePluginName()
-		if err != nil {
-			return i, err
-		}
-		readAt, err := record.Metadata.GetReadAt()
-		if err != nil {
-			return i, err
-		}
 
-		openCDC, err := record.Metadata.GetOpenCDCVersion()
-		if err != nil {
-			return i, err
+		messageAttributes := map[string]types.MessageAttributeValue{}
+		for key, value := range record.Metadata {
+			messageAttributes[key] = types.MessageAttributeValue{
+				DataType:    aws.String("String"),
+				StringValue: aws.String(value),
+			}
 		}
 		// construct record to send to destination
 		sendMessageInput := &sqs.SendMessageInput{
-			DelaySeconds: 10,
-			MessageAttributes: map[string]types.MessageAttributeValue{
-				"CreatedAt": {
-					DataType:    aws.String("String"),
-					StringValue: aws.String(createdAtTime.String()),
-				},
-				"SourcePlugin": {
-					DataType:    aws.String("String"),
-					StringValue: aws.String(sourcePlugin),
-				},
-				"ReatAt": {
-					DataType:    aws.String("String"),
-					StringValue: aws.String(readAt.String()),
-				},
-				"OpenCDC": {
-					DataType:    aws.String("String"),
-					StringValue: aws.String(openCDC),
-				},
-			},
-			MessageBody: &messageBody,
-			QueueUrl:    d.queueURL,
+			DelaySeconds:      10,
+			MessageAttributes: messageAttributes,
+			MessageBody:       &messageBody,
+			QueueUrl:          d.queueURL,
 		}
 
-		_, err = d.svc.SendMessage(ctx, sendMessageInput)
+		_, err := d.svc.SendMessage(ctx, sendMessageInput)
 		if err != nil {
 			return i, err
 		}
@@ -163,5 +137,5 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 }
 
 func (d *Destination) Teardown(_ context.Context) error {
-	return nil
+	return nil // nothing to do
 }

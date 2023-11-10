@@ -2,9 +2,6 @@ package source
 
 import (
 	"context"
-	"fmt"
-	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -110,21 +107,18 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		VisibilityTimeout:   timeout,
 	}
 
-	// grab all messages in queue
+	// grab a message from queue
 	s.sqsMessages, err = s.svc.ReceiveMessage(ctx, receiveMessage)
 	if err != nil {
 		return sdk.Record{}, err
 	}
 
-	// if there are messages in que, grab the first one
 	if s.sqsMessages.Messages != nil {
-		attributes := s.sqsMessages.Messages[0].Attributes
+		attributes := s.sqsMessages.Messages[0].MessageAttributes
 		mt := sdk.Metadata{}
 		for key, value := range attributes {
-			mt[key] = value
+			mt[key] = *value.StringValue
 		}
-		mt.SetCreatedAt(time.Now())
-		mt.SetConduitSourcePluginName(fmt.Sprintf("aws_sqs_%s", strings.ToLower(s.config.AWSQueue)))
 
 		rec := sdk.Util.Source.NewRecordCreate(
 			sdk.Position(*s.sqsMessages.Messages[0].ReceiptHandle),
