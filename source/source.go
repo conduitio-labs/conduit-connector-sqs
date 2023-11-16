@@ -2,68 +2,37 @@ package source
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	sdk "github.com/conduitio/conduit-connector-sdk"
-	cf "github.com/meroxa/conduit-connector-amazon-sqs/config"
 )
 
 type Source struct {
 	sdk.UnimplementedSource
-	config      cf.Config
-	svc         *sqs.Client
-	queueURL    *string
-	sqsMessages *sqs.ReceiveMessageOutput
+	config   Config
+	svc      *sqs.Client
+	queueURL string
 }
 
-const (
-	timeout = 12 * 60 * 60
-)
-
 func NewSource() sdk.Source {
-	return sdk.SourceWithMiddleware(&Source{})
+	return sdk.SourceWithMiddleware(&Source{}, sdk.DefaultSourceMiddleware()...)
 }
 
 func (s *Source) Parameters() map[string]sdk.Parameter {
-	return map[string]sdk.Parameter{
-		cf.ConfigKeyAWSAccessKeyID: {
-			Default: "",
-			Validations: []sdk.Validation{
-				sdk.ValidationRequired{},
-			},
-			Description: "AWS Access Key ID.",
-		},
-		cf.ConfigKeyAWSSecretAccessKey: {
-			Default: "",
-			Validations: []sdk.Validation{
-				sdk.ValidationRequired{},
-			},
-			Description: "AWS Secret Access Key.",
-		},
-		cf.ConfigKeyAWSToken: {
-			Default:     "",
-			Description: "AWS Access Token (optional).",
-		},
-		cf.ConfigKeyAWSQueue: {
-			Default: "",
-			Validations: []sdk.Validation{
-				sdk.ValidationRequired{},
-			},
-			Description: "AWS SQS Queue Name.",
-		},
-	}
+	return Config{}.Parameters()
 }
 
 func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 	sdk.Logger(ctx).Debug().Msg("Configuring Source Connector.")
-	parsedCfg, err := cf.ParseConfig(cfg)
+
+	err := sdk.Util.ParseConfig(cfg, &s.config)
 	if err != nil {
-		return err
+		return fmt.Errorf(" failed to parse source config : %w", err)
 	}
-	s.config = parsedCfg
 
 	return nil
 }
@@ -88,10 +57,10 @@ func (s *Source) Open(ctx context.Context, _ sdk.Position) error {
 	// Get URL of queue
 	urlResult, err := s.svc.GetQueueUrl(ctx, queueInput)
 	if err != nil {
-		return err
+		return fmt.Errorf(" failed to get queue amazon sqs URL: %w", err)
 	}
 
-	s.queueURL = urlResult.QueueUrl
+	s.queueURL = *urlResult.QueueUrl
 
 	return nil
 }
@@ -102,29 +71,29 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		MessageAttributeNames: []string{
 			string(types.QueueAttributeNameAll),
 		},
-		QueueUrl:            s.queueURL,
+		QueueUrl:            &s.queueURL,
 		MaxNumberOfMessages: 1,
-		VisibilityTimeout:   timeout,
+		VisibilityTimeout:   s.config.AWSSQSVisibilityTimeout,
 	}
 
 	// grab a message from queue
-	s.sqsMessages, err = s.svc.ReceiveMessage(ctx, receiveMessage)
+	sqsMessages, err := s.svc.ReceiveMessage(ctx, receiveMessage)
 	if err != nil {
-		return sdk.Record{}, err
+		return sdk.Record{}, fmt.Errorf(" error retrieving amazon sqs messages: %w", err)
 	}
 
-	if s.sqsMessages.Messages != nil {
-		attributes := s.sqsMessages.Messages[0].MessageAttributes
+	if len(sqsMessages.Messages) != 0 {
+		attributes := sqsMessages.Messages[0].MessageAttributes
 		mt := sdk.Metadata{}
 		for key, value := range attributes {
 			mt[key] = *value.StringValue
 		}
 
 		rec := sdk.Util.Source.NewRecordCreate(
-			sdk.Position(*s.sqsMessages.Messages[0].ReceiptHandle),
+			sdk.Position(*sqsMessages.Messages[0].ReceiptHandle),
 			mt,
-			sdk.RawData(*s.sqsMessages.Messages[0].MessageId),
-			sdk.RawData(*s.sqsMessages.Messages[0].Body),
+			sdk.RawData(*sqsMessages.Messages[0].MessageId),
+			sdk.RawData(*sqsMessages.Messages[0].Body),
 		)
 
 		return rec, nil
@@ -138,13 +107,13 @@ func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
 	// once message received in queue, remove it
 	receiptHandle := string(position)
 	deleteMessage := &sqs.DeleteMessageInput{
-		QueueUrl:      s.queueURL,
+		QueueUrl:      &s.queueURL,
 		ReceiptHandle: &receiptHandle,
 	}
 
 	_, err := s.svc.DeleteMessage(ctx, deleteMessage)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to delete sqs message with receipt handle %s : %w", string(position), err)
 	}
 
 	return nil

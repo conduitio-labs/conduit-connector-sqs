@@ -1,5 +1,5 @@
 builds:
-  - main: ./cmd/sqs/main.go
+  - main: ./cmd/connector/main.go
     goos:
       - darwin
       - linux
@@ -7,16 +7,17 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags:
-      - "-s -w -X 'github.com/conduitio-labs/conduit-connector-amazon-sqs.version={{ .Tag }}'"
+      - "-s -w -X 'github.com/conduitio/conduit-connector-connectorname.version={{ .Tag }}'"
 checksum:
   name_template: checksums.txt
 archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      386: i386
-      amd64: x86_64
+  - name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
 changelog:
   sort: asc
   use: github

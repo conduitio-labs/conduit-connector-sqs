@@ -1,9 +1,9 @@
 package sqs
 
 import (
+	"github.com/conduitio-labs/conduit-connector-sqs/destination"
+	"github.com/conduitio-labs/conduit-connector-sqs/source"
 	sdk "github.com/conduitio/conduit-connector-sdk"
-	"github.com/meroxa/conduit-connector-amazon-sqs/destination"
-	"github.com/meroxa/conduit-connector-amazon-sqs/source"
 )
 
 var Connector = sdk.Connector{

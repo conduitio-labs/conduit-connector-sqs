@@ -17,8 +17,6 @@ package destination
 import (
 	"context"
 
-	cf "github.com/meroxa/conduit-connector-amazon-sqs/config"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -29,9 +27,9 @@ import (
 
 type Destination struct {
 	sdk.UnimplementedDestination
-	config   cf.Config
+	config   Config
 	svc      *sqs.Client
-	queueURL *string
+	queueURL string
 }
 
 func NewDestination() sdk.Destination {
@@ -39,42 +37,16 @@ func NewDestination() sdk.Destination {
 }
 
 func (d *Destination) Parameters() map[string]sdk.Parameter {
-	return map[string]sdk.Parameter{
-		cf.ConfigKeyAWSAccessKeyID: {
-			Default: "",
-			Validations: []sdk.Validation{
-				sdk.ValidationRequired{},
-			},
-			Description: "AWS Access Key ID.",
-		},
-		cf.ConfigKeyAWSSecretAccessKey: {
-			Default: "",
-			Validations: []sdk.Validation{
-				sdk.ValidationRequired{},
-			},
-			Description: "AWS Secret Access Key.",
-		},
-		cf.ConfigKeyAWSToken: {
-			Default:     "",
-			Description: "AWS Access Token (optional).",
-		},
-		cf.ConfigKeyAWSQueue: {
-			Default: "",
-			Validations: []sdk.Validation{
-				sdk.ValidationRequired{},
-			},
-			Description: "AWS SQS Queue Name.",
-		},
-	}
+	return Config{}.Parameters()
 }
 
 func (d *Destination) Configure(ctx context.Context, cfg map[string]string) error {
 	sdk.Logger(ctx).Debug().Msg("Configuring Destination Connector.")
-	parsedCfg, err := cf.ParseConfig(cfg)
+
+	err := sdk.Util.ParseConfig(cfg, &d.config)
 	if err != nil {
 		return err
 	}
-	d.config = parsedCfg
 
 	return nil
 }
@@ -103,7 +75,7 @@ func (d *Destination) Open(ctx context.Context) error {
 		return err
 	}
 
-	d.queueURL = urlResult.QueueUrl
+	d.queueURL = *urlResult.QueueUrl
 
 	return nil
 }
@@ -124,7 +96,7 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 			DelaySeconds:      10,
 			MessageAttributes: messageAttributes,
 			MessageBody:       &messageBody,
-			QueueUrl:          d.queueURL,
+			QueueUrl:          &d.queueURL,
 		}
 
 		_, err := d.svc.SendMessage(ctx, sendMessageInput)

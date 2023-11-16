@@ -1,8 +1,8 @@
 package main
 
 import (
+	sqs "github.com/conduitio-labs/conduit-connector-sqs"
 	sdk "github.com/conduitio/conduit-connector-sdk"
-	sqs "github.com/meroxa/conduit-connector-amazon-sqs"
 )
 
 func main() {

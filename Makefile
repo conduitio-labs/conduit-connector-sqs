@@ -1,6 +1,4 @@
-GOLANG_CI_LINT_VER	:= 	v1.54.2
-VERSION				:=	v0.1.0-dev
-
+VERSION=$(shell git describe --tags --dirty --always)
 .PHONY:
 build:
 	go build -ldflags "-X 'github.com/meroxa/conduit-connector-amazon-sqs.version=${VERSION}'" -o conduit-connector-amazon-sqs cmd/sqs/main.go
@@ -11,8 +9,11 @@ test:
 
 .PHONY: golangci-lint-install
 golangci-lint-install:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_CI_LINT_VER)
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint
 
 .PHONY:
 lint:
 	golangci-lint run -c .golangci.yml
+
+install-paramgen:
+	go install github.com/conduitio/conduit-connector-sdk/cmd/paramgen@latest
