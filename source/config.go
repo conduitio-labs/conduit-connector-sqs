@@ -7,8 +7,8 @@ type Config struct {
 	AWSAccessKeyID string `json:"aws.accessKeyId" validate:"required"`
 	// amazon secret access key
 	AWSSecretAccessKey string `json:"aws.secretAccessKey" validate:"required"`
-	// amazon access token
-	AWSToken string `json:"aws.token"`
+	// amazon sqs region
+	AWSRegion string `json:"aws.region" validate:"required"`
 	// amazon sqs queue name
 	AWSQueue string `json:"aws.queue" validate:"required"`
 	// visibility timeout
@@ -20,9 +20,9 @@ const (
 
 	ConfigKeyAWSSecretAccessKey = "aws.secretAccessKey"
 
-	ConfigKeyAWSToken = "aws.token"
+	ConfigKeyAWSRegion = "aws.region"
 
 	ConfigKeyAWSQueue = "aws.queue"
 
-	ConfigSQSVisibilityTimeout = "aws.visibilityTimeout"
+	ConfigKeySQSVisibilityTimeout = "aws.visibilityTimeout"
 )

@@ -142,11 +142,12 @@ func deleteSQSQueue(t *testing.T, svc *sqs.Client, url *string) error {
 
 func newAWSClient(cfg map[string]string) (*sqs.Client, error) {
 	awsConfig, err := config.LoadDefaultConfig(context.Background(),
+		config.WithRegion(cfg[ConfigKeyAWSRegion]),
 		config.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
 				cfg[ConfigKeyAWSAccessKeyID],
 				cfg[ConfigKeyAWSSecretAccessKey],
-				cfg[ConfigKeyAWSToken])),
+				"")),
 	)
 	if err != nil {
 		return nil, err
@@ -169,13 +170,17 @@ func parseIntegrationConfig() (map[string]string, error) {
 		return map[string]string{}, errors.New("AWS_SECRET_ACCESS_KEY env var must be set")
 	}
 
-	awsToken := os.Getenv("AWS_TOKEN")
+	awsRegion := os.Getenv("AWS_REGION")
+	if awsRegion == "" {
+		return map[string]string{}, errors.New("AWS_REGION env var must be set")
+	}
+
 	awsVisibility := os.Getenv("AWS_VISIBILITY")
 
 	return map[string]string{
-		ConfigKeyAWSAccessKeyID:     awsAccessKeyID,
-		ConfigKeyAWSSecretAccessKey: awsSecretAccessKey,
-		ConfigKeyAWSToken:           awsToken,
-		ConfigSQSVisibilityTimeout:  awsVisibility,
+		ConfigKeyAWSAccessKeyID:       awsAccessKeyID,
+		ConfigKeyAWSSecretAccessKey:   awsSecretAccessKey,
+		ConfigKeySQSVisibilityTimeout: awsVisibility,
+		ConfigKeyAWSRegion:            awsRegion,
 	}, nil
 }

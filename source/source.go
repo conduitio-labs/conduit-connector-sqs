@@ -31,7 +31,7 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 
 	err := sdk.Util.ParseConfig(cfg, &s.config)
 	if err != nil {
-		return fmt.Errorf(" failed to parse source config : %w", err)
+		return fmt.Errorf("failed to parse source config : %w", err)
 	}
 
 	return nil
@@ -39,14 +39,15 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 
 func (s *Source) Open(ctx context.Context, _ sdk.Position) error {
 	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(s.config.AWSRegion),
 		config.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
 				s.config.AWSAccessKeyID,
 				s.config.AWSSecretAccessKey,
-				s.config.AWSToken)),
+				"")),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load aws config with given credentials : %w", err)
 	}
 	// Create a SQS client from just a session.
 	s.svc = sqs.NewFromConfig(cfg)
@@ -57,7 +58,7 @@ func (s *Source) Open(ctx context.Context, _ sdk.Position) error {
 	// Get URL of queue
 	urlResult, err := s.svc.GetQueueUrl(ctx, queueInput)
 	if err != nil {
-		return fmt.Errorf(" failed to get queue amazon sqs URL: %w", err)
+		return fmt.Errorf("failed to get queue amazon sqs URL: %w", err)
 	}
 
 	s.queueURL = *urlResult.QueueUrl
@@ -79,7 +80,7 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	// grab a message from queue
 	sqsMessages, err := s.svc.ReceiveMessage(ctx, receiveMessage)
 	if err != nil {
-		return sdk.Record{}, fmt.Errorf(" error retrieving amazon sqs messages: %w", err)
+		return sdk.Record{}, fmt.Errorf("error retrieving amazon sqs messages: %w", err)
 	}
 
 	if len(sqsMessages.Messages) != 0 {

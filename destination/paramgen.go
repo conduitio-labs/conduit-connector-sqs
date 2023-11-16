@@ -17,6 +17,12 @@ func (Config) Parameters() map[string]sdk.Parameter {
 				sdk.ValidationRequired{},
 			},
 		},
+		"aws.delayTime": {
+			Default:     "",
+			Description: "amazon sqs message delay time",
+			Type:        sdk.ParameterTypeInt,
+			Validations: []sdk.Validation{},
+		},
 		"aws.queue": {
 			Default:     "",
 			Description: "amazon sqs queue name",
@@ -32,12 +38,6 @@ func (Config) Parameters() map[string]sdk.Parameter {
 			Validations: []sdk.Validation{
 				sdk.ValidationRequired{},
 			},
-		},
-		"aws.token": {
-			Default:     "",
-			Description: "amazon access token",
-			Type:        sdk.ParameterTypeString,
-			Validations: []sdk.Validation{},
 		},
 	}
 }

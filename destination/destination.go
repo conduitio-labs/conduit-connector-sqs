@@ -16,6 +16,7 @@ package destination
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -45,7 +46,7 @@ func (d *Destination) Configure(ctx context.Context, cfg map[string]string) erro
 
 	err := sdk.Util.ParseConfig(cfg, &d.config)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse destination config : %w", err)
 	}
 
 	return nil
@@ -53,14 +54,15 @@ func (d *Destination) Configure(ctx context.Context, cfg map[string]string) erro
 
 func (d *Destination) Open(ctx context.Context) error {
 	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithRegion(d.config.AWSRegion),
 		config.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
 				d.config.AWSAccessKeyID,
 				d.config.AWSSecretAccessKey,
-				d.config.AWSToken)),
+				"")),
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load amazon config with given credentials : %w", err)
 	}
 	// Create a SQS client from just a session.
 	d.svc = sqs.NewFromConfig(cfg)
@@ -72,7 +74,7 @@ func (d *Destination) Open(ctx context.Context) error {
 	// Get URL of queue
 	urlResult, err := d.svc.GetQueueUrl(ctx, queueInput)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get sqs queue url : %w", err)
 	}
 
 	d.queueURL = *urlResult.QueueUrl
@@ -93,15 +95,15 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 		}
 		// construct record to send to destination
 		sendMessageInput := &sqs.SendMessageInput{
-			DelaySeconds:      10,
 			MessageAttributes: messageAttributes,
 			MessageBody:       &messageBody,
 			QueueUrl:          &d.queueURL,
+			DelaySeconds:      d.config.AWSSQSMessageDelay,
 		}
 
 		_, err := d.svc.SendMessage(ctx, sendMessageInput)
 		if err != nil {
-			return i, err
+			return i, fmt.Errorf("failed to write sqs message : %w", err)
 		}
 	}
 

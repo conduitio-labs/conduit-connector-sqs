@@ -25,6 +25,14 @@ func (Config) Parameters() map[string]sdk.Parameter {
 				sdk.ValidationRequired{},
 			},
 		},
+		"aws.region": {
+			Default:     "",
+			Description: "amazon sqs region",
+			Type:        sdk.ParameterTypeString,
+			Validations: []sdk.Validation{
+				sdk.ValidationRequired{},
+			},
+		},
 		"aws.secretAccessKey": {
 			Default:     "",
 			Description: "amazon secret access key",
@@ -32,12 +40,6 @@ func (Config) Parameters() map[string]sdk.Parameter {
 			Validations: []sdk.Validation{
 				sdk.ValidationRequired{},
 			},
-		},
-		"aws.token": {
-			Default:     "",
-			Description: "amazon access token",
-			Type:        sdk.ParameterTypeString,
-			Validations: []sdk.Validation{},
 		},
 		"aws.visibilityTimeout": {
 			Default:     "",
