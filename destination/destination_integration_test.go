@@ -162,9 +162,15 @@ func parseIntegrationConfig() (map[string]string, error) {
 
 	awsMessageDelay := os.Getenv("AWS_MESSAGE_DELAY")
 
+	awsRegion := os.Getenv("AWS_REGION")
+	if awsRegion == "" {
+		return map[string]string{}, errors.New("AWS_REGION env var must be set")
+	}
+
 	return map[string]string{
 		ConfigKeyAWSAccessKeyID:     awsAccessKeyID,
 		ConfigKeyAWSSecretAccessKey: awsSecretAccessKey,
 		ConfigKeyAWSSQSDelayTime:    awsMessageDelay,
+		ConfigKeyAWSRegion:          awsRegion,
 	}, nil
 }

@@ -5,7 +5,7 @@ build:
 
 .PHONY:
 test:
-	go test $(GOTEST_FLAGS) -race ./...
+	go test $(GOTEST_FLAGS) -race -v ./...
 
 .PHONY: golangci-lint-install
 golangci-lint-install:
