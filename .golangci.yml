@@ -16,6 +16,8 @@ linters-settings:
     values:
       regexp:
         copyright-year: 20[2-9]\d
+  lll:
+    line-length: 120
 
 linters:
   # please, do not use `enable-all`: it's deprecated and will be removed soon.
@@ -23,6 +25,7 @@ linters:
   disable-all: true
   enable:
     - bodyclose
+    - deadcode
     # - depguard
     - dogsled
     - durationcheck
@@ -40,12 +43,12 @@ linters:
     - gocritic
     - gocyclo
     # - cyclop # not interested in package complexities at the moment
-    # - godot
+    - godot
     - gofmt
     # - gofumpt
     - goheader
     - goimports
-    # - revive # lots of unused parameters in the template, would be helpful for the user to keep them
+    - revive
     # - gomnd
     - gomoddirectives
     - gomodguard
@@ -56,21 +59,22 @@ linters:
     # - ifshort
     - ineffassign
     # - importas
-    # - lll
+    - lll
     # - misspell
     - makezero
     # - nakedret
     # - nilerr
     # - nilnil
-    # - nlreturn
+    - nlreturn
     - noctx
     - nolintlint
     # - paralleltest
     - predeclared
-    # - rowserrcheck
+    - rowserrcheck
     - staticcheck
+    - structcheck
     - stylecheck
-    # - sqlclosecheck
+    - sqlclosecheck
     # - tagliatelle
     # - tenv
     # - thelper
@@ -79,7 +83,21 @@ linters:
     - unconvert
     # - unparam
     - unused
-    # - wastedassign
+    - varcheck
+    - wastedassign
     - whitespace
-    # - wrapcheck
-    # - wsl
+  # - wrapcheck
+  # - wsl
+
+  # don't enable:
+  # - asciicheck
+  # - dupl
+  # - gochecknoglobals
+  # - gocognit
+  # - godox
+  # - goerr113
+  # - maligned
+  # - nestif
+  # - prealloc
+  # - testpackage
+  # - wsl
