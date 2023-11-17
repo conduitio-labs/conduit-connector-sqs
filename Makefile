@@ -13,7 +13,7 @@ golangci-lint-install:
 
 .PHONY:
 lint:
-	golangci-lint run -c .golangci.yml
-
+	golangci-lint run
+	
 install-paramgen:
 	go install github.com/conduitio/conduit-connector-sdk/cmd/paramgen@latest

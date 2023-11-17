@@ -16,8 +16,14 @@ linters-settings:
     values:
       regexp:
         copyright-year: 20[2-9]\d
-  lll:
-    line-length: 120
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - dogsled
+        - gosec
+        - revive
 
 linters:
   # please, do not use `enable-all`: it's deprecated and will be removed soon.
@@ -25,7 +31,6 @@ linters:
   disable-all: true
   enable:
     - bodyclose
-    - deadcode
     # - depguard
     - dogsled
     - durationcheck
@@ -43,7 +48,7 @@ linters:
     - gocritic
     - gocyclo
     # - cyclop # not interested in package complexities at the moment
-    - godot
+    # - godot
     - gofmt
     # - gofumpt
     - goheader
@@ -59,20 +64,19 @@ linters:
     # - ifshort
     - ineffassign
     # - importas
-    - lll
+    # - lll
     # - misspell
     - makezero
     # - nakedret
     # - nilerr
     # - nilnil
-    - nlreturn
+    # - nlreturn
     - noctx
     - nolintlint
     # - paralleltest
     - predeclared
     - rowserrcheck
     - staticcheck
-    - structcheck
     - stylecheck
     - sqlclosecheck
     # - tagliatelle
@@ -83,7 +87,6 @@ linters:
     - unconvert
     # - unparam
     - unused
-    - varcheck
     - wastedassign
     - whitespace
   # - wrapcheck
