@@ -1,3 +1,17 @@
+// Copyright © 2023 Meroxa, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package source
 
 import (
@@ -16,16 +30,17 @@ import (
 
 func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	is := is.New(t)
+	ctx := context.Background()
+	source := NewSource()
+	defer func() {
+		err := source.Teardown(ctx)
+		is.NoErr(err)
+	}()
 
 	client, url, cfg, err := prepareIntegrationTest(t)
-	ctx := context.Background()
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
+
 	messageBody := "Test message body"
-
-	// Send a message to the queue
-
 	_, err = client.SendMessage(
 		context.Background(),
 		&sqs.SendMessageInput{
@@ -33,26 +48,16 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 			QueueUrl:    url.QueueUrl,
 		},
 	)
+	is.NoErr(err)
 
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	source := &Source{}
 	err = source.Configure(ctx, cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
 
 	err = source.Open(ctx, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
 
 	record, err := source.Read(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
 
 	is.Equal(string(record.Payload.After.Bytes()), messageBody)
 
@@ -60,29 +65,27 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 }
 
 func TestSource_EmptyQueue(t *testing.T) {
+	is := is.New(t)
 	_, _, cfg, err := prepareIntegrationTest(t)
 	ctx := context.Background()
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
 
-	source := &Source{}
+	source := NewSource()
+	defer func() {
+		err := source.Teardown(ctx)
+		is.NoErr(err)
+	}()
 	err = source.Configure(ctx, cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
 
 	err = source.Open(ctx, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
 
 	record, err := source.Read(ctx)
 
 	if err != sdk.ErrBackoffRetry || record.Metadata != nil {
 		t.Fatalf("expected no records and a signal that there are no more records, got %v %v", record, err)
 	}
-	_ = source.Teardown(ctx)
 }
 
 func prepareIntegrationTest(t *testing.T) (*sqs.Client, *sqs.GetQueueUrlOutput, map[string]string, error) {
@@ -162,17 +165,17 @@ func parseIntegrationConfig() (map[string]string, error) {
 	awsAccessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
 
 	if awsAccessKeyID == "" {
-		return map[string]string{}, errors.New("AWS_ACCESS_KEY_ID env var must be set")
+		return nil, errors.New("AWS_ACCESS_KEY_ID env var must be set")
 	}
 
 	awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 	if awsSecretAccessKey == "" {
-		return map[string]string{}, errors.New("AWS_SECRET_ACCESS_KEY env var must be set")
+		return nil, errors.New("AWS_SECRET_ACCESS_KEY env var must be set")
 	}
 
 	awsRegion := os.Getenv("AWS_REGION")
 	if awsRegion == "" {
-		return map[string]string{}, errors.New("AWS_REGION env var must be set")
+		return nil, errors.New("AWS_REGION env var must be set")
 	}
 
 	awsVisibility := os.Getenv("AWS_VISIBILITY")

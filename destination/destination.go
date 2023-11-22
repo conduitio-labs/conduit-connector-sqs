@@ -1,4 +1,4 @@
-// Copyright © 2022 Meroxa, Inc.
+// Copyright © 2023 Meroxa, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -83,27 +83,40 @@ func (d *Destination) Open(ctx context.Context) error {
 }
 
 func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, error) {
-	for i, record := range records {
-		messageBody := string(record.Payload.After.Bytes())
+	for i := 0; i < len(records); i += 10 {
+		end := i + 10
+		if end > len(records) {
+			end = len(records)
+		}
 
-		messageAttributes := map[string]types.MessageAttributeValue{}
-		for key, value := range record.Metadata {
-			messageAttributes[key] = types.MessageAttributeValue{
-				DataType:    aws.String("String"),
-				StringValue: aws.String(value),
+		recordsChunk := records[i:end]
+		sqsRecords := sqs.SendMessageBatchInput{
+			QueueUrl: &d.queueURL,
+		}
+
+		for _, record := range recordsChunk {
+			messageBody := string(record.Bytes())
+
+			messageAttributes := map[string]types.MessageAttributeValue{}
+			for key, value := range record.Metadata {
+				messageAttributes[key] = types.MessageAttributeValue{
+					DataType:    aws.String("String"),
+					StringValue: aws.String(value),
+				}
 			}
-		}
-		// construct record to send to destination
-		sendMessageInput := &sqs.SendMessageInput{
-			MessageAttributes: messageAttributes,
-			MessageBody:       &messageBody,
-			QueueUrl:          &d.queueURL,
-			DelaySeconds:      d.config.AWSSQSMessageDelay,
+			id := string(record.Key.Bytes())
+			// construct record to send to destination
+			sqsRecords.Entries = append(sqsRecords.Entries, types.SendMessageBatchRequestEntry{
+				MessageAttributes: messageAttributes,
+				MessageBody:       &messageBody,
+				DelaySeconds:      d.config.AWSSQSMessageDelay,
+				Id:                &id,
+			})
 		}
 
-		_, err := d.svc.SendMessage(ctx, sendMessageInput)
+		_, err := d.svc.SendMessageBatch(ctx, &sqsRecords)
 		if err != nil {
-			return i, fmt.Errorf("failed to write sqs message : %w", err)
+			return 0, fmt.Errorf("failed to write sqs message : %w", err)
 		}
 	}
 

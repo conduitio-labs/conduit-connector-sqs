@@ -6,13 +6,13 @@ Run `make build` to build the connector.
 
 
 ## Source
-The source connector pulls data from the Amazon SQS Queue. As messages come in, the source connector grabs a single message from the Amazon SQS Queue, formats it for the destination connector as a new record, and sends it. After the destination connector acknowledges that it has received the record, the source connector deletes the message from the Amazon SQS Queue.
+The source connector pulls data from the Amazon SQS Queue. As messages come in, the source connector grabs a single message from the Amazon SQS Queue, formats it for the destination connector as a new record, and sends it. The Message Body of the SQS Message is formatted into a record's payload, and the Message Attributes are passed as record metadata. After the destination connector acknowledges that it has received the record, the source connector deletes the message from the Amazon SQS Queue.
 
 
 ## Destinaton
 
 
-The destination connector formats incoming records as Amazon SQS Messages and pushes them to the queue. Any fields defined in the metadata of the record will be passed as message attributes, and the payload of the record will be passed as the message body.
+The destination connector splits incoming records into batches of 10 and pushes them to the Amazon SQS Queue. Any fields defined in the metadata of the record will be passed as Message Attributes, and the json encoding of the record will be passed as the Message Body.
 
 
 ### Configuration

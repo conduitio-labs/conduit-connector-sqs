@@ -1,11 +1,26 @@
+// Copyright © 2023 Meroxa, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package destination
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -15,32 +30,31 @@ import (
 	"github.com/matryer/is"
 )
 
+type ResultConfig struct {
+	Payload   Data   `json:"payload"`
+	MetaData  string `json:"meta_data"`
+	Position  string `json:"position"`
+	Key       string `json:"key"`
+	Operation string `json:"operation"`
+}
+
+type Data struct {
+	Before string `json:"before"`
+	After  string `json:"after"`
+}
+
 func TestDestination_SuccessfulMessageSend(t *testing.T) {
 	is := is.New(t)
-	messageBody := "Test message body"
-
-	client, url, cfg, err := prepareIntegrationTest(t)
 	ctx := context.Background()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	destination := &Destination{}
-	err = destination.Configure(ctx, cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = destination.Open(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	metadata := sdk.Metadata{}
+	destination := NewDestination()
+	defer func() {
+		err := destination.Teardown(ctx)
+		is.NoErr(err)
+	}()
+
+	messageBody := "Test message body"
 	record := sdk.Util.Source.NewRecordCreate(
 		sdk.Position("111111"),
 		metadata,
@@ -48,14 +62,19 @@ func TestDestination_SuccessfulMessageSend(t *testing.T) {
 		sdk.RawData(messageBody),
 	)
 
+	client, url, cfg, err := prepareIntegrationTest(t)
+	is.NoErr(err)
+
+	err = destination.Configure(ctx, cfg)
+	is.NoErr(err)
+
+	err = destination.Open(ctx)
+	is.NoErr(err)
+
 	ret, err := destination.Write(ctx, []sdk.Record{record})
-	if err != nil {
-		t.Fatal(err)
-	}
+	is.NoErr(err)
 
 	is.Equal(ret, 1)
-	// wait a little bit after we send message, it wont show up right away
-	time.Sleep(30 * time.Second)
 
 	message, err := client.ReceiveMessage(
 		context.Background(),
@@ -63,17 +82,17 @@ func TestDestination_SuccessfulMessageSend(t *testing.T) {
 			QueueUrl: url.QueueUrl,
 		},
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	if len(message.Messages) == 0 {
-		t.Fatalf("expected 1 message. Got %d", len(message.Messages))
-	}
+	is.NoErr(err)
+	is.Equal(len(message.Messages), 1)
 
-	is.Equal(*message.Messages[0].Body, messageBody)
+	var result ResultConfig
+	err = json.Unmarshal([]byte(*message.Messages[0].Body), &result)
+	is.NoErr(err)
+	bodyDecoded, err := base64.StdEncoding.DecodeString(result.Payload.After)
 
-	_ = destination.Teardown(ctx)
+	is.NoErr(err)
+	is.Equal(string(bodyDecoded), messageBody)
 }
 
 func prepareIntegrationTest(t *testing.T) (*sqs.Client, *sqs.GetQueueUrlOutput, map[string]string, error) {
@@ -82,12 +101,12 @@ func prepareIntegrationTest(t *testing.T) (*sqs.Client, *sqs.GetQueueUrlOutput, 
 		t.Skip(err)
 	}
 
+	sourceQueue := "test-queue-destination-" + uuid.NewString()
+
 	client, err := newAWSClient(cfg)
 	if err != nil {
 		t.Fatalf("could not create S3 client: %v", err)
 	}
-
-	sourceQueue := "test-queue-destination-" + uuid.NewString()
 
 	_, err = client.CreateQueue(context.Background(), &sqs.CreateQueueInput{
 		QueueName: &sourceQueue,
@@ -152,19 +171,19 @@ func parseIntegrationConfig() (map[string]string, error) {
 	awsAccessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
 
 	if awsAccessKeyID == "" {
-		return map[string]string{}, errors.New("AWS_ACCESS_KEY_ID env var must be set")
+		return nil, errors.New("AWS_ACCESS_KEY_ID env var must be set")
 	}
 
 	awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 	if awsSecretAccessKey == "" {
-		return map[string]string{}, errors.New("AWS_SECRET_ACCESS_KEY env var must be set")
+		return nil, errors.New("AWS_SECRET_ACCESS_KEY env var must be set")
 	}
 
 	awsMessageDelay := os.Getenv("AWS_MESSAGE_DELAY")
 
 	awsRegion := os.Getenv("AWS_REGION")
 	if awsRegion == "" {
-		return map[string]string{}, errors.New("AWS_REGION env var must be set")
+		return nil, errors.New("AWS_REGION env var must be set")
 	}
 
 	return map[string]string{

@@ -1,4 +1,4 @@
-// Copyright © 2022 Meroxa, Inc.
+// Copyright © 2023 Meroxa, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,18 +21,15 @@ import (
 	"github.com/matryer/is"
 )
 
-var exampleConfig = map[string]string{
-	"aws.accessKeyId":       "access-key-123",
-	"aws.secretAccessKey":   "secret-key-321",
-	"aws.region":            "us-east-1",
-	"aws.visibilityTimeout": "60",
-	"aws.queue":             "queue",
-}
-
 func TestParseConfig(t *testing.T) {
-	is := is.New(t)
-	var got Config
-	err := sdk.Util.ParseConfig(exampleConfig, &got)
+	exampleConfig := map[string]string{
+		"aws.accessKeyId":       "access-key-123",
+		"aws.secretAccessKey":   "secret-key-321",
+		"aws.region":            "us-east-1",
+		"aws.visibilityTimeout": "60",
+		"aws.queue":             "queue",
+	}
+
 	want := Config{
 		AWSAccessKeyID:          "access-key-123",
 		AWSSecretAccessKey:      "secret-key-321",
@@ -40,6 +37,10 @@ func TestParseConfig(t *testing.T) {
 		AWSQueue:                "queue",
 		AWSSQSVisibilityTimeout: 60,
 	}
+
+	is := is.New(t)
+	var got Config
+	err := sdk.Util.ParseConfig(exampleConfig, &got)
 
 	is.NoErr(err)
 	is.Equal(want, got)
