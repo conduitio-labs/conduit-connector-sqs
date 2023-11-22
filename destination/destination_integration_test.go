@@ -21,6 +21,7 @@ import (
 	"errors"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -75,6 +76,7 @@ func TestDestination_SuccessfulMessageSend(t *testing.T) {
 	is.NoErr(err)
 
 	is.Equal(ret, 1)
+	time.Sleep(5 * time.Second)
 
 	message, err := client.ReceiveMessage(
 		context.Background(),
