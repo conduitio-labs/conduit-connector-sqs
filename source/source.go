@@ -97,25 +97,24 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, fmt.Errorf("error retrieving amazon sqs messages: %w", err)
 	}
 
-	if len(sqsMessages.Messages) != 0 {
-		attributes := sqsMessages.Messages[0].MessageAttributes
-		mt := sdk.Metadata{}
-		for key, value := range attributes {
-			mt[key] = *value.StringValue
-		}
-
-		rec := sdk.Util.Source.NewRecordCreate(
-			sdk.Position(*sqsMessages.Messages[0].ReceiptHandle),
-			mt,
-			sdk.RawData(*sqsMessages.Messages[0].MessageId),
-			sdk.RawData(*sqsMessages.Messages[0].Body),
-		)
-
-		return rec, nil
+	// if there are no messages in queue, backoff
+	if len(sqsMessages.Messages) == 0 {
+		return sdk.Record{}, sdk.ErrBackoffRetry
 	}
 
-	// if there are no messages in queue, backoff
-	return sdk.Record{}, sdk.ErrBackoffRetry
+	attributes := sqsMessages.Messages[0].MessageAttributes
+	mt := sdk.Metadata{}
+	for key, value := range attributes {
+		mt[key] = *value.StringValue
+	}
+
+	rec := sdk.Util.Source.NewRecordCreate(
+		sdk.Position(*sqsMessages.Messages[0].ReceiptHandle),
+		mt,
+		sdk.RawData(*sqsMessages.Messages[0].MessageId),
+		sdk.RawData(*sqsMessages.Messages[0].Body),
+	)
+	return rec, nil
 }
 
 func (s *Source) Ack(ctx context.Context, position sdk.Position) error {

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -95,6 +96,60 @@ func TestDestination_SuccessfulMessageSend(t *testing.T) {
 
 	is.NoErr(err)
 	is.Equal(string(bodyDecoded), messageBody)
+}
+
+func TestDestination_FailBadRecord(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+
+	metadata := sdk.Metadata{}
+	destination := NewDestination()
+	defer func() {
+		err := destination.Teardown(ctx)
+		is.NoErr(err)
+	}()
+
+	messageBody := "Test message body"
+	record := sdk.Util.Source.NewRecordCreate(
+		sdk.Position(""),
+		metadata,
+		sdk.RawData(""),
+		sdk.RawData(messageBody),
+	)
+
+	_, _, cfg, err := prepareIntegrationTest(t)
+	is.NoErr(err)
+
+	err = destination.Configure(ctx, cfg)
+	is.NoErr(err)
+
+	err = destination.Open(ctx)
+	is.NoErr(err)
+
+	_, err = destination.Write(ctx, []sdk.Record{record})
+	is.True(strings.Contains(err.Error(), "AWS.SimpleQueueService.InvalidBatchEntryId"))
+}
+
+func TestDestination_FailNonExistentQueue(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+
+	destination := NewDestination()
+	defer func() {
+		err := destination.Teardown(ctx)
+		is.NoErr(err)
+	}()
+
+	_, _, cfg, err := prepareIntegrationTest(t)
+	is.NoErr(err)
+
+	cfg[ConfigKeyAWSQueue] = ""
+
+	err = destination.Configure(ctx, cfg)
+	is.NoErr(err)
+
+	err = destination.Open(ctx)
+	is.True(strings.Contains(err.Error(), "AWS.SimpleQueueService.NonExistentQueue"))
 }
 
 func prepareIntegrationTest(t *testing.T) (*sqs.Client, *sqs.GetQueueUrlOutput, map[string]string, error) {

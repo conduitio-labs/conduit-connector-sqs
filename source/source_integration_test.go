@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -36,8 +37,8 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 		err := source.Teardown(ctx)
 		is.NoErr(err)
 	}()
-
-	client, url, cfg, err := prepareIntegrationTest(t)
+	sourceQueue := "test-queue-source-" + uuid.NewString()
+	client, url, cfg, err := prepareIntegrationTest(t, sourceQueue)
 	is.NoErr(err)
 
 	messageBody := "Test message body"
@@ -59,14 +60,38 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	record, err := source.Read(ctx)
 	is.NoErr(err)
 
+	err = source.Ack(ctx, record.Position)
+	is.NoErr(err)
+
 	is.Equal(string(record.Payload.After.Bytes()), messageBody)
 
 	_ = source.Teardown(ctx)
 }
+func TestSource_FailBadCreds(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	source := NewSource()
+	defer func() {
+		err := source.Teardown(ctx)
+		is.NoErr(err)
+	}()
+	sourceQueue := "test-queue-source-" + uuid.NewString()
+	_, _, cfg, err := prepareIntegrationTest(t, sourceQueue)
+	is.NoErr(err)
+
+	cfg[ConfigKeyAWSAccessKeyID] = ""
+
+	err = source.Configure(ctx, cfg)
+	is.NoErr(err)
+
+	err = source.Open(ctx, nil)
+	is.True(strings.Contains(err.Error(), "failed to refresh cached credentials, static credentials are empty"))
+}
 
 func TestSource_EmptyQueue(t *testing.T) {
 	is := is.New(t)
-	_, _, cfg, err := prepareIntegrationTest(t)
+	sourceQueue := "test-queue-source-" + uuid.NewString()
+	_, _, cfg, err := prepareIntegrationTest(t, sourceQueue)
 	ctx := context.Background()
 	is.NoErr(err)
 
@@ -88,7 +113,14 @@ func TestSource_EmptyQueue(t *testing.T) {
 	}
 }
 
-func prepareIntegrationTest(t *testing.T) (*sqs.Client, *sqs.GetQueueUrlOutput, map[string]string, error) {
+func TestSource_FailEmptyQueueName(t *testing.T) {
+	is := is.New(t)
+	sourceQueue := ""
+	_, _, _, err := prepareIntegrationTest(t, sourceQueue)
+	is.True(strings.Contains(err.Error(), "Queue name cannot be empty"))
+}
+
+func prepareIntegrationTest(t *testing.T, sourceQueue string) (*sqs.Client, *sqs.GetQueueUrlOutput, map[string]string, error) {
 	cfg, err := parseIntegrationConfig()
 	if err != nil {
 		t.Skip(err)
@@ -98,8 +130,6 @@ func prepareIntegrationTest(t *testing.T) (*sqs.Client, *sqs.GetQueueUrlOutput, 
 	if err != nil {
 		t.Fatalf("could not create S3 client: %v", err)
 	}
-
-	sourceQueue := "test-queue-source-" + uuid.NewString()
 
 	_, err = client.CreateQueue(context.Background(), &sqs.CreateQueueInput{
 		QueueName: &sourceQueue,

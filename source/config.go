@@ -14,7 +14,7 @@
 
 package source
 
-//go:generate paramgen -output=paramgen.go Config
+//go:generate paramgen -output=config_paramgen.go Config
 
 type Config struct {
 	// amazon access key id
@@ -26,7 +26,7 @@ type Config struct {
 	// amazon sqs queue name
 	AWSQueue string `json:"aws.queue" validate:"required"`
 	// visibility timeout
-	AWSSQSVisibilityTimeout int32 `json:"aws.visibilityTimeout"`
+	AWSSQSVisibilityTimeout int32 `json:"aws.visibilityTimeout" default:"0"`
 }
 
 const (

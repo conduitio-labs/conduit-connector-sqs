@@ -14,7 +14,7 @@
 
 package destination
 
-//go:generate paramgen -output=paramgen.go Config
+//go:generate paramgen -output=config_paramgen.go Config
 
 type Config struct {
 	// amazon access key id
@@ -26,7 +26,7 @@ type Config struct {
 	// amazon sqs queue name
 	AWSQueue string `json:"aws.queue" validate:"required"`
 	// amazon sqs message delay time
-	AWSSQSMessageDelay int32 `json:"aws.delayTime"`
+	AWSSQSMessageDelay int32 `json:"aws.delayTime" default:"0"`
 }
 
 const (

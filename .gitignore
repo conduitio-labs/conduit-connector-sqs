@@ -20,5 +20,5 @@ vendor/
 # Go workspace file
 go.work
 
-/connectors/conduit-connector-amazon-sqs
-conduit-connector-amazon-sqs
+/connectors/conduit-connector-sqs
+conduit-connector-sqs
