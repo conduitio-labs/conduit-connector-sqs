@@ -17,6 +17,7 @@ package source
 import (
 	"testing"
 
+	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/matryer/is"
 )
@@ -31,10 +32,12 @@ func TestParseConfig(t *testing.T) {
 	}
 
 	want := Config{
-		AWSAccessKeyID:          "access-key-123",
-		AWSSecretAccessKey:      "secret-key-321",
-		AWSRegion:               "us-east-1",
-		AWSQueue:                "queue",
+		Config: common.Config{
+			AWSAccessKeyID:     "access-key-123",
+			AWSSecretAccessKey: "secret-key-321",
+			AWSRegion:          "us-east-1",
+			AWSQueue:           "queue",
+		},
 		AWSSQSVisibilityTimeout: 60,
 	}
 

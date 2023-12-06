@@ -14,29 +14,16 @@
 
 package source
 
+import "github.com/conduitio-labs/conduit-connector-sqs/common"
+
 //go:generate paramgen -output=config_paramgen.go Config
 
 type Config struct {
-	// amazon access key id
-	AWSAccessKeyID string `json:"aws.accessKeyId" validate:"required"`
-	// amazon secret access key
-	AWSSecretAccessKey string `json:"aws.secretAccessKey" validate:"required"`
-	// amazon sqs region
-	AWSRegion string `json:"aws.region" validate:"required"`
-	// amazon sqs queue name
-	AWSQueue string `json:"aws.queue" validate:"required"`
+	common.Config
 	// visibility timeout
 	AWSSQSVisibilityTimeout int32 `json:"aws.visibilityTimeout" default:"0"`
 }
 
 const (
-	ConfigKeyAWSAccessKeyID = "aws.accessKeyId"
-
-	ConfigKeyAWSSecretAccessKey = "aws.secretAccessKey"
-
-	ConfigKeyAWSRegion = "aws.region"
-
-	ConfigKeyAWSQueue = "aws.queue"
-
 	ConfigKeySQSVisibilityTimeout = "aws.visibilityTimeout"
 )

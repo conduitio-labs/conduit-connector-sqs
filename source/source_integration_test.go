@@ -24,6 +24,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
@@ -84,7 +85,7 @@ func TestSource_FailBadCreds(t *testing.T) {
 	_, _, cfg, err := prepareIntegrationTest(t, sourceQueue)
 	is.NoErr(err)
 
-	cfg[ConfigKeyAWSAccessKeyID] = ""
+	cfg[common.ConfigKeyAWSAccessKeyID] = ""
 
 	err = source.Configure(ctx, cfg)
 	is.NoErr(err)
@@ -128,7 +129,7 @@ func TestSource_FailEmptyQueueName(t *testing.T) {
 func prepareIntegrationTest(t *testing.T, sourceQueue string) (*sqs.Client, *sqs.GetQueueUrlOutput, map[string]string, error) {
 	cfg, err := parseIntegrationConfig()
 	if err != nil {
-		t.Skip(err)
+		t.Fatalf("could not parse config: %v", err)
 	}
 
 	client, err := newAWSClient(cfg)
@@ -163,7 +164,7 @@ func prepareIntegrationTest(t *testing.T, sourceQueue string) (*sqs.Client, *sqs
 		}
 	})
 
-	cfg[ConfigKeyAWSQueue] = sourceQueue
+	cfg[common.ConfigKeyAWSQueue] = sourceQueue
 
 	return client, urlResult, cfg, nil
 }
@@ -180,11 +181,11 @@ func deleteSQSQueue(t *testing.T, svc *sqs.Client, url *string) error {
 
 func newAWSClient(cfg map[string]string) (*sqs.Client, error) {
 	awsConfig, err := config.LoadDefaultConfig(context.Background(),
-		config.WithRegion(cfg[ConfigKeyAWSRegion]),
+		config.WithRegion(cfg[common.ConfigKeyAWSRegion]),
 		config.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
-				cfg[ConfigKeyAWSAccessKeyID],
-				cfg[ConfigKeyAWSSecretAccessKey],
+				cfg[common.ConfigKeyAWSAccessKeyID],
+				cfg[common.ConfigKeyAWSSecretAccessKey],
 				"")),
 	)
 	if err != nil {
@@ -216,9 +217,9 @@ func parseIntegrationConfig() (map[string]string, error) {
 	awsVisibility := os.Getenv("AWS_VISIBILITY")
 
 	return map[string]string{
-		ConfigKeyAWSAccessKeyID:       awsAccessKeyID,
-		ConfigKeyAWSSecretAccessKey:   awsSecretAccessKey,
-		ConfigKeySQSVisibilityTimeout: awsVisibility,
-		ConfigKeyAWSRegion:            awsRegion,
+		common.ConfigKeyAWSAccessKeyID:     awsAccessKeyID,
+		common.ConfigKeyAWSSecretAccessKey: awsSecretAccessKey,
+		ConfigKeySQSVisibilityTimeout:      awsVisibility,
+		common.ConfigKeyAWSRegion:          awsRegion,
 	}, nil
 }

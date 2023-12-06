@@ -27,6 +27,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
@@ -143,7 +144,7 @@ func TestDestination_FailNonExistentQueue(t *testing.T) {
 	_, _, cfg, err := prepareIntegrationTest(t)
 	is.NoErr(err)
 
-	cfg[ConfigKeyAWSQueue] = ""
+	cfg[common.ConfigKeyAWSQueue] = ""
 
 	err = destination.Configure(ctx, cfg)
 	is.NoErr(err)
@@ -155,7 +156,7 @@ func TestDestination_FailNonExistentQueue(t *testing.T) {
 func prepareIntegrationTest(t *testing.T) (*sqs.Client, *sqs.GetQueueUrlOutput, map[string]string, error) {
 	cfg, err := parseIntegrationConfig()
 	if err != nil {
-		t.Skip(err)
+		t.Fatalf("could not parse config: %v", err)
 	}
 
 	sourceQueue := "test-queue-destination-" + uuid.NewString()
@@ -192,7 +193,7 @@ func prepareIntegrationTest(t *testing.T) (*sqs.Client, *sqs.GetQueueUrlOutput, 
 		}
 	})
 
-	cfg[ConfigKeyAWSQueue] = sourceQueue
+	cfg[common.ConfigKeyAWSQueue] = sourceQueue
 
 	return client, urlResult, cfg, nil
 }
@@ -209,11 +210,11 @@ func deleteSQSQueue(t *testing.T, svc *sqs.Client, url *string) error {
 
 func newAWSClient(cfg map[string]string) (*sqs.Client, error) {
 	awsConfig, err := config.LoadDefaultConfig(context.Background(),
-		config.WithRegion(cfg[ConfigKeyAWSRegion]),
+		config.WithRegion(cfg[common.ConfigKeyAWSRegion]),
 		config.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
-				cfg[ConfigKeyAWSAccessKeyID],
-				cfg[ConfigKeyAWSSecretAccessKey], "")),
+				cfg[common.ConfigKeyAWSAccessKeyID],
+				cfg[common.ConfigKeyAWSSecretAccessKey], "")),
 	)
 	if err != nil {
 		return nil, err
@@ -244,9 +245,9 @@ func parseIntegrationConfig() (map[string]string, error) {
 	}
 
 	return map[string]string{
-		ConfigKeyAWSAccessKeyID:     awsAccessKeyID,
-		ConfigKeyAWSSecretAccessKey: awsSecretAccessKey,
-		ConfigKeyAWSSQSDelayTime:    awsMessageDelay,
-		ConfigKeyAWSRegion:          awsRegion,
+		common.ConfigKeyAWSAccessKeyID:     awsAccessKeyID,
+		common.ConfigKeyAWSSecretAccessKey: awsSecretAccessKey,
+		ConfigKeyAWSSQSDelayTime:           awsMessageDelay,
+		common.ConfigKeyAWSRegion:          awsRegion,
 	}, nil
 }
