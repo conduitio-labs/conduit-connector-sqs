@@ -14,8 +14,6 @@
 
 package common
 
-//go:generate paramgen -output=config_paramgen.go Config
-
 type Config struct {
 	// amazon access key id
 	AWSAccessKeyID string `json:"aws.accessKeyId" validate:"required"`
