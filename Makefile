@@ -1,19 +1,19 @@
 VERSION=$(shell git describe --tags --dirty --always)
-.PHONY:
+
+.PHONY: build
 build:
 	go build -ldflags "-X 'github.com/conduitio-labs/conduit-connector-sqs.version=${VERSION}'" -o conduit-connector-sqs cmd/connector/main.go
 
-.PHONY:
+.PHONY: test
 test:
 	go test $(GOTEST_FLAGS) -race -v ./...
 
-.PHONY: golangci-lint-install
-golangci-lint-install:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint
-
-.PHONY:
+.PHONY: lint
 lint:
 	golangci-lint run
-	
-install-paramgen:
-	go install github.com/conduitio/conduit-connector-sdk/cmd/paramgen@latest
+
+.PHONY: install-tools
+install-tools:
+	@echo Installing tools from tools.go
+	@go list -e -f '{{ join .Imports "\n" }}' tools.go | xargs -I % go list -f "%@{{.Module.Version}}" % | xargs -tI % go install %
+	@go mod tidy
