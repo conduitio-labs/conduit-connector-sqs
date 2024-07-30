@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
@@ -63,8 +64,19 @@ func (s *Source) Open(ctx context.Context, _ sdk.Position) error {
 	if err != nil {
 		return fmt.Errorf("failed to load aws config with given credentials : %w", err)
 	}
+
+	var sqsOptions []func(*sqs.Options)
+	if url := s.config.AWSURL; url != "" {
+		endpointResolver, err := common.NewEndpointResolver(url)
+		if err != nil {
+			return err
+		}
+
+		sqsOptions = append(sqsOptions, sqs.WithEndpointResolverV2(endpointResolver))
+	}
+
 	// Create a SQS client from just a session.
-	s.svc = sqs.NewFromConfig(cfg)
+	s.svc = sqs.NewFromConfig(cfg, sqsOptions...)
 
 	queueInput := &sqs.GetQueueUrlInput{
 		QueueName: &s.config.AWSQueue,

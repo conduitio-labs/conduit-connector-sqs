@@ -18,8 +18,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -154,10 +152,7 @@ func TestDestination_FailNonExistentQueue(t *testing.T) {
 }
 
 func prepareIntegrationTest(t *testing.T) (*sqs.Client, *sqs.GetQueueUrlOutput, map[string]string, error) {
-	cfg, err := parseIntegrationConfig()
-	if err != nil {
-		t.Fatalf("could not parse config: %v", err)
-	}
+	cfg := integrationConfig()
 
 	sourceQueue := "test-queue-destination-" + uuid.NewString()
 
@@ -178,10 +173,6 @@ func prepareIntegrationTest(t *testing.T) (*sqs.Client, *sqs.GetQueueUrlOutput, 
 	}
 	// Get URL of queue
 	urlResult, err := client.GetQueueUrl(context.Background(), queueInput)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -219,35 +210,27 @@ func newAWSClient(cfg map[string]string) (*sqs.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	var sqsOptions []func(*sqs.Options)
+	if url := cfg[common.ConfigKeyAWSURL]; url != "" {
+		endpointResolver, err := common.NewEndpointResolver(url)
+		if err != nil {
+			return nil, err
+		}
+
+		sqsOptions = append(sqsOptions, sqs.WithEndpointResolverV2(endpointResolver))
+	}
+
 	// Create a SQS client from just a session.
-	sqsClient := sqs.NewFromConfig(awsConfig)
+	sqsClient := sqs.NewFromConfig(awsConfig, sqsOptions...)
 
 	return sqsClient, nil
 }
 
-func parseIntegrationConfig() (map[string]string, error) {
-	awsAccessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
-
-	if awsAccessKeyID == "" {
-		return nil, errors.New("AWS_ACCESS_KEY_ID env var must be set")
-	}
-
-	awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
-	if awsSecretAccessKey == "" {
-		return nil, errors.New("AWS_SECRET_ACCESS_KEY env var must be set")
-	}
-
-	awsMessageDelay := os.Getenv("AWS_MESSAGE_DELAY")
-
-	awsRegion := os.Getenv("AWS_REGION")
-	if awsRegion == "" {
-		return nil, errors.New("AWS_REGION env var must be set")
-	}
-
+func integrationConfig() map[string]string {
 	return map[string]string{
-		common.ConfigKeyAWSAccessKeyID:     awsAccessKeyID,
-		common.ConfigKeyAWSSecretAccessKey: awsSecretAccessKey,
-		ConfigKeyAWSSQSDelayTime:           awsMessageDelay,
-		common.ConfigKeyAWSRegion:          awsRegion,
-	}, nil
+		common.ConfigKeyAWSAccessKeyID:     "accessskeymock",
+		common.ConfigKeyAWSSecretAccessKey: "accessssecretmock",
+		common.ConfigKeyAWSRegion:          "us-east-1",
+	}
 }

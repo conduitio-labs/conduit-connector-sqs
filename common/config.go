@@ -23,6 +23,8 @@ type Config struct {
 	AWSRegion string `json:"aws.region" validate:"required"`
 	// amazon sqs queue name
 	AWSQueue string `json:"aws.queue" validate:"required"`
+	// AWSURL is the URL for endpoint override - testing/dry-run only
+	AWSURL string `json:"aws.url"`
 }
 
 const (
@@ -33,4 +35,6 @@ const (
 	ConfigKeyAWSRegion = "aws.region"
 
 	ConfigKeyAWSQueue = "aws.queue"
+
+	ConfigKeyAWSURL = "aws.url"
 )

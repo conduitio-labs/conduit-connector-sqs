@@ -8,6 +8,11 @@ build:
 test:
 	go test $(GOTEST_FLAGS) -race -v ./...
 
+test-integration: up
+	go test $(GOTEST_FLAGS) -v -race ./...; ret=$$?; \
+		docker compose -f test/docker-compose.yml down -v; \
+		exit $$ret
+
 .PHONY: lint
 lint:
 	golangci-lint run
@@ -17,3 +22,11 @@ install-tools:
 	@echo Installing tools from tools.go
 	@go list -e -f '{{ join .Imports "\n" }}' tools.go | xargs -I % go list -f "%@{{.Module.Version}}" % | xargs -tI % go install %
 	@go mod tidy
+
+.PHONY: up
+up:
+	docker compose -f test/docker-compose.yml up --quiet-pull -d --wait 
+
+.PHONY: down
+down:
+	docker compose -f test/docker-compose.yml down -v --remove-orphans

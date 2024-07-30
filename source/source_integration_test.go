@@ -16,8 +16,6 @@ package source
 
 import (
 	"context"
-	"errors"
-	"os"
 	"strings"
 	"testing"
 
@@ -123,14 +121,12 @@ func TestSource_FailEmptyQueueName(t *testing.T) {
 	is := is.New(t)
 	sourceQueue := ""
 	_, _, _, err := prepareIntegrationTest(t, sourceQueue)
+
 	is.True(strings.Contains(err.Error(), "Queue name cannot be empty"))
 }
 
 func prepareIntegrationTest(t *testing.T, sourceQueue string) (*sqs.Client, *sqs.GetQueueUrlOutput, map[string]string, error) {
-	cfg, err := parseIntegrationConfig()
-	if err != nil {
-		t.Fatalf("could not parse config: %v", err)
-	}
+	cfg := integrationConfig()
 
 	client, err := newAWSClient(cfg)
 	if err != nil {
@@ -149,10 +145,6 @@ func prepareIntegrationTest(t *testing.T, sourceQueue string) (*sqs.Client, *sqs
 	}
 	// Get URL of queue
 	urlResult, err := client.GetQueueUrl(context.Background(), queueInput)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -186,40 +178,33 @@ func newAWSClient(cfg map[string]string) (*sqs.Client, error) {
 			credentials.NewStaticCredentialsProvider(
 				cfg[common.ConfigKeyAWSAccessKeyID],
 				cfg[common.ConfigKeyAWSSecretAccessKey],
-				"")),
+				""),
+		),
 	)
 	if err != nil {
 		return nil, err
 	}
+
+	var sqsOptions []func(*sqs.Options)
+	if url := cfg[common.ConfigKeyAWSURL]; url != "" {
+		endpointResolver, err := common.NewEndpointResolver(url)
+		if err != nil {
+			return nil, err
+		}
+
+		sqsOptions = append(sqsOptions, sqs.WithEndpointResolverV2(endpointResolver))
+	}
+
 	// Create a SQS client from just a session.
-	sqsClient := sqs.NewFromConfig(awsConfig)
+	sqsClient := sqs.NewFromConfig(awsConfig, sqsOptions...)
 
 	return sqsClient, nil
 }
 
-func parseIntegrationConfig() (map[string]string, error) {
-	awsAccessKeyID := os.Getenv("AWS_ACCESS_KEY_ID")
-
-	if awsAccessKeyID == "" {
-		return nil, errors.New("AWS_ACCESS_KEY_ID env var must be set")
-	}
-
-	awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
-	if awsSecretAccessKey == "" {
-		return nil, errors.New("AWS_SECRET_ACCESS_KEY env var must be set")
-	}
-
-	awsRegion := os.Getenv("AWS_REGION")
-	if awsRegion == "" {
-		return nil, errors.New("AWS_REGION env var must be set")
-	}
-
-	awsVisibility := os.Getenv("AWS_VISIBILITY")
-
+func integrationConfig() map[string]string {
 	return map[string]string{
-		common.ConfigKeyAWSAccessKeyID:     awsAccessKeyID,
-		common.ConfigKeyAWSSecretAccessKey: awsSecretAccessKey,
-		ConfigKeySQSVisibilityTimeout:      awsVisibility,
-		common.ConfigKeyAWSRegion:          awsRegion,
-	}, nil
+		common.ConfigKeyAWSAccessKeyID:     "accessskeymock",
+		common.ConfigKeyAWSSecretAccessKey: "accessssecretmock",
+		common.ConfigKeyAWSRegion:          "us-east-1",
+	}
 }
