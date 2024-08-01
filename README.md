@@ -20,22 +20,22 @@ The configuration passed to `Configure` can contain the following fields:
 
 #### Source
 
-| name                  | description                                    | required | example             |
-| --------------------- | ---------------------------------------------- | -------- | ------------------- |
-| `aws.accessKeyId`     | AWS Access Key ID                              | yes      | "THE_ACCESS_KEY_ID" |
-| `aws.secretAccessKey` | AWS Secret Access Key                          | yes      | "SECRET_ACCESS_KEY" |
-| `aws.region`          | AWS SQS Region                                 | yes      | "us-east-1"         |
-| `aws.queue`           | AWS SQS Queue Name                             | yes      | "QUEUE_NAME"        |
-| `aws.delayTime`       | AWS SQS Message Delay                          | yes      | "5"                 |
-| `aws.url`             | URL for AWS (internal use only)  | no       |                     |
+| name                  | description                     | required | example             |
+| --------------------- | ------------------------------- | -------- | ------------------- |
+| `aws.accessKeyId`     | AWS Access Key ID               | yes      | "THE_ACCESS_KEY_ID" |
+| `aws.secretAccessKey` | AWS Secret Access Key           | yes      | "SECRET_ACCESS_KEY" |
+| `aws.region`          | AWS SQS Region                  | yes      | "us-east-1"         |
+| `aws.queue`           | AWS SQS Queue Name              | yes      | "QUEUE_NAME"        |
+| `aws.delayTime`       | AWS SQS Message Delay           | yes      | "5"                 |
+| `aws.url`             | URL for AWS (internal use only) | no       |                     |
 
 #### Destination
 
-| name                    | description                                    | required | example             |
-| ----------------------- | ---------------------------------------------- | -------- | ------------------- |
-| `aws.accessKeyId`       | AWS Access Key ID                              | yes      | "THE_ACCESS_KEY_ID" |
-| `aws.secretAccessKey`   | AWS Secret Access Key                          | yes      | "SECRET_ACCESS_KEY" |
-| `aws.region`            | AWS SQS Region                                 | yes      | "us-east-1"         |
-| `aws.queue`             | AWS SQS Queue Name                             | yes      | "QUEUE_NAME"        |
-| `aws.visibilityTimeout` | AWS SQS Message Visibility Timeout             | yes      | "5"                 |
-| `aws.url`               | URL for AWS (internal use only)  | no       |                     |
+| name                    | description                        | required | example             |
+| ----------------------- | ---------------------------------- | -------- | ------------------- |
+| `aws.accessKeyId`       | AWS Access Key ID                  | yes      | "THE_ACCESS_KEY_ID" |
+| `aws.secretAccessKey`   | AWS Secret Access Key              | yes      | "SECRET_ACCESS_KEY" |
+| `aws.region`            | AWS SQS Region                     | yes      | "us-east-1"         |
+| `aws.queue`             | AWS SQS Queue Name                 | yes      | "QUEUE_NAME"        |
+| `aws.visibilityTimeout` | AWS SQS Message Visibility Timeout | yes      | "5"                 |
+| `aws.url`               | URL for AWS (internal use only)    | no       |                     |
