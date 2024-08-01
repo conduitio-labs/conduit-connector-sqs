@@ -67,7 +67,7 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 		t.Fatalf("expected no records and a signal that there are no more records, got %v %v", record, err)
 	}
 
-	_ = source.Teardown(ctx)
+	is.NoErr(source.Teardown(ctx))
 }
 
 func TestSource_FailBadCreds(t *testing.T) {
