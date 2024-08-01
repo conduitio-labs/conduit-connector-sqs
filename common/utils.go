@@ -25,7 +25,7 @@ import (
 	transport "github.com/aws/smithy-go/endpoints"
 )
 
-// EndpointResolver sets a custom endpoint for the kinesis client. It satisfies the
+// EndpointResolver sets a custom endpoint for the sqs client. It satisfies the
 // sqs.EndpointResolverV2 interface.
 type EndpointResolver struct{ url url.URL }
 

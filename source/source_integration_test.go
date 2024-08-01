@@ -29,10 +29,7 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	is := is.New(t)
 	ctx := testutils.TestContext(t)
 	source := NewSource()
-	defer func() {
-		err := source.Teardown(ctx)
-		is.NoErr(err)
-	}()
+	defer func() { is.NoErr(source.Teardown(ctx)) }()
 
 	testClient := testutils.NewSQSClient(ctx, is)
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
@@ -66,18 +63,13 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	if err != sdk.ErrBackoffRetry || record.Metadata != nil {
 		t.Fatalf("expected no records and a signal that there are no more records, got %v %v", record, err)
 	}
-
-	is.NoErr(source.Teardown(ctx))
 }
 
 func TestSource_FailBadCreds(t *testing.T) {
 	is := is.New(t)
 	ctx := testutils.TestContext(t)
 	source := NewSource()
-	defer func() {
-		err := source.Teardown(ctx)
-		is.NoErr(err)
-	}()
+	defer func() { is.NoErr(source.Teardown(ctx)) }()
 
 	testClient := testutils.NewSQSClient(ctx, is)
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)

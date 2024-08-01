@@ -15,7 +15,6 @@
 package destination
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"strings"
@@ -44,14 +43,11 @@ type Data struct {
 
 func TestDestination_SuccessfulMessageSend(t *testing.T) {
 	is := is.New(t)
-	ctx := context.Background()
+	ctx := testutils.TestContext(t)
 
 	metadata := sdk.Metadata{}
 	destination := NewDestination()
-	defer func() {
-		err := destination.Teardown(ctx)
-		is.NoErr(err)
-	}()
+	defer func() { is.NoErr(destination.Teardown(ctx)) }()
 
 	messageBody := "Test message body"
 	record := sdk.Util.Source.NewRecordCreate(
@@ -98,7 +94,7 @@ func TestDestination_SuccessfulMessageSend(t *testing.T) {
 
 func TestDestination_FailBadRecord(t *testing.T) {
 	is := is.New(t)
-	ctx := context.Background()
+	ctx := testutils.TestContext(t)
 
 	testClient := testutils.NewSQSClient(ctx, is)
 	queueName := testutils.CreateTestQueue(ctx, t, is, testClient)
@@ -106,10 +102,7 @@ func TestDestination_FailBadRecord(t *testing.T) {
 
 	metadata := sdk.Metadata{}
 	destination := NewDestination()
-	defer func() {
-		err := destination.Teardown(ctx)
-		is.NoErr(err)
-	}()
+	defer func() { is.NoErr(destination.Teardown(ctx)) }()
 
 	messageBody := "Test message body"
 	record := sdk.Util.Source.NewRecordCreate(
@@ -131,15 +124,12 @@ func TestDestination_FailBadRecord(t *testing.T) {
 
 func TestDestination_FailNonExistentQueue(t *testing.T) {
 	is := is.New(t)
-	ctx := context.Background()
+	ctx := testutils.TestContext(t)
 
 	destination := NewDestination()
-	defer func() {
-		err := destination.Teardown(ctx)
-		is.NoErr(err)
-	}()
+	defer func() { is.NoErr(destination.Teardown(ctx)) }()
 
-	cfg := testutils.IntegrationConfig("testqueue")
+	cfg := testutils.IntegrationConfig("nonexistent-testqueue")
 
 	cfg[common.ConfigKeyAWSQueue] = ""
 
