@@ -18,8 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
@@ -52,36 +50,15 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 	return nil
 }
 
-func (s *Source) Open(ctx context.Context, _ sdk.Position) error {
-	cfg, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion(s.config.AWSRegion),
-		config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(
-				s.config.AWSAccessKeyID,
-				s.config.AWSSecretAccessKey,
-				"")),
-	)
+func (s *Source) Open(ctx context.Context, _ sdk.Position) (err error) {
+	s.svc, err = common.NewSQSClient(ctx, s.config.Config)
 	if err != nil {
-		return fmt.Errorf("failed to load aws config with given credentials : %w", err)
+		return fmt.Errorf("failed to create sourcde sqs client: %w", err)
 	}
-
-	var sqsOptions []func(*sqs.Options)
-	if url := s.config.AWSURL; url != "" {
-		endpointResolver, err := common.NewEndpointResolver(url)
-		if err != nil {
-			return err
-		}
-
-		sqsOptions = append(sqsOptions, sqs.WithEndpointResolverV2(endpointResolver))
-	}
-
-	// Create a SQS client from just a session.
-	s.svc = sqs.NewFromConfig(cfg, sqsOptions...)
 
 	queueInput := &sqs.GetQueueUrlInput{
 		QueueName: &s.config.AWSQueue,
 	}
-	// Get URL of queue
 	urlResult, err := s.svc.GetQueueUrl(ctx, queueInput)
 	if err != nil {
 		return fmt.Errorf("failed to get queue amazon sqs URL: %w", err)

@@ -47,5 +47,11 @@ func (Config) Parameters() map[string]sdk.Parameter {
 				sdk.ValidationRequired{},
 			},
 		},
+		"aws.url": {
+			Default:     "",
+			Description: "aws.url is the URL for endpoint override - testing/dry-run only",
+			Type:        sdk.ParameterTypeString,
+			Validations: []sdk.Validation{},
+		},
 	}
 }

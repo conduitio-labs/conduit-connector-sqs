@@ -13,6 +13,10 @@ test-integration: up
 		docker compose -f test/docker-compose.yml down -v; \
 		exit $$ret
 
+.PHONY: generate
+generate:
+	go generate ./...
+
 .PHONY: lint
 lint:
 	golangci-lint run
