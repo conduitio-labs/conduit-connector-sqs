@@ -15,15 +15,15 @@
 package common
 
 type Config struct {
-	// amazon access key id
+	// AWSAccessKeyID is the amazon access key id
 	AWSAccessKeyID string `json:"aws.accessKeyId" validate:"required"`
-	// amazon secret access key
+	// AWSSecretAccessKey is the amazon secret access key
 	AWSSecretAccessKey string `json:"aws.secretAccessKey" validate:"required"`
-	// amazon sqs region
+	// AWSRegion is the amazon sqs region
 	AWSRegion string `json:"aws.region" validate:"required"`
-	// amazon sqs queue name
+	// AWSQueue is the sqs queue name
 	AWSQueue string `json:"aws.queue" validate:"required"`
-	// AWSURL is the URL for endpoint override - testing/dry-run only
+	// AWSURL is the URL for AWS (internal use only).
 	AWSURL string `json:"aws.url"`
 }
 
