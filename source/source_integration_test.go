@@ -108,16 +108,16 @@ func TestSource_OpenWithPosition(t *testing.T) {
 	is := is.New(t)
 	ctx := testutils.TestContext(t)
 
-	testQueueName := "test-queue"
-
-	cfg := testutils.IntegrationConfig(testQueueName)
+	testClient := testutils.NewSQSClient(ctx, is)
+	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
+	cfg := testutils.IntegrationConfig(testQueue.Name)
 	{
 		source := NewSource()
 		is.NoErr(source.Configure(ctx, cfg))
 
 		pos := common.Position{
 			ReceiptHandle: "test-handle",
-			QueueName:     testQueueName,
+			QueueName:     testQueue.Name,
 		}
 
 		is.NoErr(source.Open(ctx, pos.ToSdkPosition()))
