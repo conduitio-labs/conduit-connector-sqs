@@ -53,7 +53,7 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 func (s *Source) Open(ctx context.Context, _ sdk.Position) (err error) {
 	s.svc, err = common.NewSQSClient(ctx, s.config.Config)
 	if err != nil {
-		return fmt.Errorf("failed to create sourcde sqs client: %w", err)
+		return fmt.Errorf("failed to create source sqs client: %w", err)
 	}
 
 	queueInput := &sqs.GetQueueUrlInput{
