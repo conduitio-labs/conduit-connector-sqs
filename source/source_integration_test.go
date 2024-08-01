@@ -107,3 +107,42 @@ func TestSource_EmptyQueue(t *testing.T) {
 		t.Fatalf("expected no records and a signal that there are no more records, got %v %v", record, err)
 	}
 }
+
+func TestSource_OpenWithPosition(t *testing.T) {
+	is := is.New(t)
+	ctx := testutils.TestContext(t)
+
+	testQueueName := "test-queue"
+
+	cfg := testutils.IntegrationConfig(testQueueName)
+	{
+		source := NewSource()
+		is.NoErr(source.Configure(ctx, cfg))
+
+		pos := common.Position{
+			ReceiptHandle: "test-handle",
+			QueueName:     testQueueName,
+		}
+
+		is.NoErr(source.Open(ctx, pos.ToSdkPosition()))
+	}
+	{
+		source := NewSource()
+		is.NoErr(source.Configure(ctx, cfg))
+
+		pos := common.Position{
+			ReceiptHandle: "test-handle",
+			QueueName:     "other-test-queue",
+		}
+
+		err := source.Open(ctx, pos.ToSdkPosition())
+		if err == nil {
+			is.Fail() // expected error on wrong position
+		}
+
+		is.True(strings.Contains(
+			err.Error(),
+			"the old position contains a different queue name than the connector configuration",
+		))
+	}
+}
