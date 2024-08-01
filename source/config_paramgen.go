@@ -11,7 +11,7 @@ func (Config) Parameters() map[string]sdk.Parameter {
 	return map[string]sdk.Parameter{
 		"aws.accessKeyId": {
 			Default:     "",
-			Description: "amazon access key id",
+			Description: "aws.accessKeyId is the amazon access key id",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{
 				sdk.ValidationRequired{},
@@ -19,7 +19,7 @@ func (Config) Parameters() map[string]sdk.Parameter {
 		},
 		"aws.queue": {
 			Default:     "",
-			Description: "amazon sqs queue name",
+			Description: "aws.queue is the sqs queue name",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{
 				sdk.ValidationRequired{},
@@ -27,7 +27,7 @@ func (Config) Parameters() map[string]sdk.Parameter {
 		},
 		"aws.region": {
 			Default:     "",
-			Description: "amazon sqs region",
+			Description: "aws.region is the amazon sqs region",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{
 				sdk.ValidationRequired{},
@@ -35,7 +35,7 @@ func (Config) Parameters() map[string]sdk.Parameter {
 		},
 		"aws.secretAccessKey": {
 			Default:     "",
-			Description: "amazon secret access key",
+			Description: "aws.secretAccessKey is the amazon secret access key",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{
 				sdk.ValidationRequired{},
@@ -43,7 +43,7 @@ func (Config) Parameters() map[string]sdk.Parameter {
 		},
 		"aws.url": {
 			Default:     "",
-			Description: "aws.url is the URL for endpoint override - testing/dry-run only",
+			Description: "aws.url is the URL for AWS (internal use only).",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{},
 		},
