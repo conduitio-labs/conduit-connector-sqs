@@ -27,7 +27,7 @@ The configuration passed to `Configure` can contain the following fields:
 | `aws.region`          | AWS SQS Region                                 | yes      | "us-east-1"         |
 | `aws.queue`           | AWS SQS Queue Name                             | yes      | "QUEUE_NAME"        |
 | `aws.delayTime`       | AWS SQS Message Delay                          | yes      | "5"                 |
-| `aws.url`             | AWSURL is the URL for AWS (internal use only). | no       |                     |
+| `aws.url`             | URL for AWS (internal use only)  | no       |                     |
 
 #### Destination
 
