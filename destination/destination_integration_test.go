@@ -57,7 +57,9 @@ func TestDestination_SuccessfulMessageSend(t *testing.T) {
 		opencdc.RawData(messageBody),
 	)
 
-	testClient := testutils.NewSQSClient(ctx, is)
+	testClient, close := testutils.NewSQSClient(ctx, is)
+	defer close()
+
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
 	cfg := testutils.IntegrationConfig(testQueue.Name)
 
@@ -96,7 +98,9 @@ func TestDestination_FailBadRecord(t *testing.T) {
 	is := is.New(t)
 	ctx := testutils.TestContext(t)
 
-	testClient := testutils.NewSQSClient(ctx, is)
+	testClient, close := testutils.NewSQSClient(ctx, is)
+	defer close()
+
 	queueName := testutils.CreateTestQueue(ctx, t, is, testClient)
 	cfg := testutils.IntegrationConfig(queueName.Name)
 

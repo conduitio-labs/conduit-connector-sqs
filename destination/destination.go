@@ -17,6 +17,7 @@ package destination
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -32,10 +33,14 @@ type Destination struct {
 	config   Config
 	svc      *sqs.Client
 	queueURL string
+
+	httpClient *http.Client
 }
 
 func NewDestination() sdk.Destination {
-	return sdk.DestinationWithMiddleware(&Destination{}, sdk.DefaultDestinationMiddleware()...)
+	return sdk.DestinationWithMiddleware(&Destination{
+		httpClient: &http.Client{},
+	}, sdk.DefaultDestinationMiddleware()...)
 }
 
 func (d *Destination) Parameters() config.Parameters {
@@ -54,7 +59,8 @@ func (d *Destination) Configure(ctx context.Context, cfg config.Config) error {
 }
 
 func (d *Destination) Open(ctx context.Context) (err error) {
-	d.svc, err = common.NewSQSClient(ctx, d.config.Config)
+	d.svc, err = common.NewSQSClient(ctx, d.httpClient, d.config.Config)
+
 	if err != nil {
 		return fmt.Errorf("failed to create destination sqs client: %w", err)
 	}
@@ -116,5 +122,6 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 }
 
 func (d *Destination) Teardown(_ context.Context) error {
-	return nil // nothing to do
+	d.httpClient.CloseIdleConnections()
+	return nil
 }

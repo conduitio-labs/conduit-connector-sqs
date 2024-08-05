@@ -16,6 +16,7 @@ package testutils
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -30,9 +31,12 @@ func TestContext(t *testing.T) context.Context {
 	return logger.WithContext(context.Background())
 }
 
-func NewSQSClient(ctx context.Context, is *is.I) *sqs.Client {
+func NewSQSClient(ctx context.Context, is *is.I) (*sqs.Client, func()) {
 	is.Helper()
-	client, err := common.NewSQSClient(ctx, common.Config{
+
+	httpClient := &http.Client{}
+
+	client, err := common.NewSQSClient(ctx, httpClient, common.Config{
 		AWSAccessKeyID:     "accessskeymock",
 		AWSSecretAccessKey: "accessssecretmock",
 		AWSRegion:          "us-east-1",
@@ -40,7 +44,9 @@ func NewSQSClient(ctx context.Context, is *is.I) *sqs.Client {
 	})
 	is.NoErr(err)
 
-	return client
+	return client, func() {
+		httpClient.CloseIdleConnections()
+	}
 }
 
 type TestQueue struct {
