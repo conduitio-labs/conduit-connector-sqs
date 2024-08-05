@@ -16,6 +16,7 @@ package destination
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 
@@ -102,7 +103,12 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 					StringValue: aws.String(value),
 				}
 			}
-			id := string(record.Key.Bytes())
+
+			id := base64.RawURLEncoding.EncodeToString(record.Key.Bytes())
+			if len(id) > 80 {
+				id = id[:80]
+			}
+
 			// construct record to send to destination
 			sqsRecords.Entries = append(sqsRecords.Entries, types.SendMessageBatchRequestEntry{
 				MessageAttributes: messageAttributes,
