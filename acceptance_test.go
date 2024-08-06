@@ -37,6 +37,7 @@ func TestAcceptance(t *testing.T) {
 
 				queue := testutils.CreateTestQueue(ctx, t, is, testClient)
 				sourceConfig[common.ConfigKeyAWSQueue] = queue.Name
+				sourceConfig[source.ConfigKeySQSVisibilityTimeout] = "1"
 				destinationConfig[common.ConfigKeyAWSQueue] = queue.Name
 
 				sdk.Logger(ctx).Info().Msgf("queue name: %v", queue.Name)
