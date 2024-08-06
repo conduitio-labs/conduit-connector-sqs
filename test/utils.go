@@ -58,7 +58,7 @@ type TestQueue struct {
 
 func CreateTestQueue(ctx context.Context, t *testing.T, is *is.I, client *sqs.Client) TestQueue {
 	is.Helper()
-	queueName := "test-queue-" + uuid.NewString()
+	queueName := "test-queue-" + uuid.NewString()[:8]
 
 	_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
 		QueueName: &queueName,
