@@ -1,12 +1,24 @@
+// Copyright © 2024 Meroxa, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package sqs
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
-	"github.com/conduitio-labs/conduit-connector-sqs/destination"
 	"github.com/conduitio-labs/conduit-connector-sqs/source"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -32,8 +44,8 @@ func TestAcceptance(t *testing.T) {
 				// sqs client creation must be created and cleaned up inside
 				// BeforeTest so that goleak doesn't alert of a false positive http
 				// connection leaking.
-				testClient, close := testutils.NewSQSClient(ctx, is)
-				defer close()
+				testClient, closeTestClient := testutils.NewSQSClient(ctx, is)
+				defer closeTestClient()
 
 				queue := testutils.CreateTestQueue(ctx, t, is, testClient)
 				sourceConfig[common.ConfigKeyAWSQueue] = queue.Name
@@ -63,81 +75,4 @@ func TestAcceptance(t *testing.T) {
 			ReadTimeout:  5000 * time.Millisecond,
 		},
 	})
-}
-
-
-func TestThings(t *testing.T) {
-	is := is.New(t)
-	ctx := testutils.TestContext(t)
-
-	// testClient1, _ := testutils.NewSQSClient(ctx, is)
-
-	// queue := testutils.CreateTestQueue(ctx, t, is, testClient1)
-
-	// queueURL := aws.String("http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/test-queue-3e2a8371-3435-4136-bb85-d5009417f3c2")
-
-	// _, err := testClient1.SendMessageBatch(ctx, &sqs.SendMessageBatchInput{
-	// 	Entries: []types.SendMessageBatchRequestEntry{
-	// 		{
-	// 			Id:          aws.String("1"),
-	// 			MessageBody: aws.String("hello worlddd"),
-	// 		},
-	// 	},
-	// 	QueueUrl: queueURL,
-	// })
-	// is.NoErr(err)
-
-	// testClient2, _ := testutils.NewSQSClient(ctx, is)
-
-	// receiveMessage := &sqs.ReceiveMessageInput{
-	// 	MessageAttributeNames: []string{
-	// 		string(types.QueueAttributeNameAll),
-	// 	},
-	// 	QueueUrl:            queueURL,
-	// 	MaxNumberOfMessages: 1,
-	// }
-
-	// msgs, err := testClient2.ReceiveMessage(ctx, receiveMessage)
-	// is.NoErr(err)
-
-	// t.Log(*msgs.Messages[0].Body)
-
-	testClient, _ := testutils.NewSQSClient(ctx, is)
-	queue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.IntegrationConfig(queue.Name)
-
-	source := source.NewSource()
-	defer func() { is.NoErr(source.Teardown(ctx)) }()
-
-	is.NoErr(source.Configure(ctx, cfg))
-	is.NoErr(source.Open(ctx, nil))
-
-	destination := destination.NewDestination()
-	defer func() { is.NoErr(destination.Teardown(ctx)) }()
-
-	is.NoErr(destination.Configure(ctx, cfg))
-	is.NoErr(destination.Open(ctx))
-
-	for i := 0; i < 20; i++ {
-		_, err := destination.Write(ctx, []sdk.Record{
-			{
-				Position:  sdk.Position("1"),
-				Operation: sdk.OperationSnapshot,
-				Metadata:  map[string]string{},
-				Key:       sdk.RawData("1"),
-				Payload: sdk.Change{
-					After: sdk.RawData("hello world"),
-				},
-			},
-		})
-		is.NoErr(err)
-	}
-
-	for i := 0; i < 20; i++ {
-		rec, err := source.Read(ctx)
-		is.NoErr(err)
-		fmt.Println(string(rec.Payload.After.Bytes()))
-
-		is.NoErr(source.Ack(ctx, rec.Position))
-	}
 }
