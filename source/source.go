@@ -18,10 +18,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/config"
+	configv2 "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/conduitio/conduit-commons/config"
+	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
@@ -36,14 +38,15 @@ func NewSource() sdk.Source {
 	return sdk.SourceWithMiddleware(&Source{}, sdk.DefaultSourceMiddleware()...)
 }
 
-func (s *Source) Parameters() map[string]sdk.Parameter {
+func (s *Source) Parameters() config.Parameters {
 	return Config{}.Parameters()
 }
 
-func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
+func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
 	sdk.Logger(ctx).Debug().Msg("Configuring Source Connector.")
 
-	err := sdk.Util.ParseConfig(cfg, &s.config)
+	err := sdk.Util.ParseConfig(ctx, cfg, &s.config, NewSource().Parameters())
+
 	if err != nil {
 		return fmt.Errorf("failed to parse source config : %w", err)
 	}
@@ -51,10 +54,10 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 	return nil
 }
 
-func (s *Source) Open(ctx context.Context, _ sdk.Position) error {
-	cfg, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion(s.config.AWSRegion),
-		config.WithCredentialsProvider(
+func (s *Source) Open(ctx context.Context, _ opencdc.Position) error {
+	cfg, err := configv2.LoadDefaultConfig(ctx,
+		configv2.WithRegion(s.config.AWSRegion),
+		configv2.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
 				s.config.AWSAccessKeyID,
 				s.config.AWSSecretAccessKey,
@@ -80,7 +83,7 @@ func (s *Source) Open(ctx context.Context, _ sdk.Position) error {
 	return nil
 }
 
-func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
+func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 	var err error
 	receiveMessage := &sqs.ReceiveMessageInput{
 		MessageAttributeNames: []string{
@@ -94,30 +97,30 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	// grab a message from queue
 	sqsMessages, err := s.svc.ReceiveMessage(ctx, receiveMessage)
 	if err != nil {
-		return sdk.Record{}, fmt.Errorf("error retrieving amazon sqs messages: %w", err)
+		return opencdc.Record{}, fmt.Errorf("error retrieving amazon sqs messages: %w", err)
 	}
 
 	// if there are no messages in queue, backoff
 	if len(sqsMessages.Messages) == 0 {
-		return sdk.Record{}, sdk.ErrBackoffRetry
+		return opencdc.Record{}, sdk.ErrBackoffRetry
 	}
 
 	attributes := sqsMessages.Messages[0].MessageAttributes
-	mt := sdk.Metadata{}
+	mt := opencdc.Metadata{}
 	for key, value := range attributes {
 		mt[key] = *value.StringValue
 	}
 
 	rec := sdk.Util.Source.NewRecordCreate(
-		sdk.Position(*sqsMessages.Messages[0].ReceiptHandle),
+		opencdc.Position(*sqsMessages.Messages[0].ReceiptHandle),
 		mt,
-		sdk.RawData(*sqsMessages.Messages[0].MessageId),
-		sdk.RawData(*sqsMessages.Messages[0].Body),
+		opencdc.RawData(*sqsMessages.Messages[0].MessageId),
+		opencdc.RawData(*sqsMessages.Messages[0].Body),
 	)
 	return rec, nil
 }
 
-func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
+func (s *Source) Ack(ctx context.Context, position opencdc.Position) error {
 	// once message received in queue, remove it
 	receiptHandle := string(position)
 	deleteMessage := &sqs.DeleteMessageInput{

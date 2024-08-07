@@ -15,6 +15,7 @@
 package destination
 
 import (
+	"context"
 	"testing"
 
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
@@ -42,7 +43,7 @@ func TestParseConfig(t *testing.T) {
 
 	is := is.New(t)
 	var got Config
-	err := sdk.Util.ParseConfig(exampleConfig, &got)
+	err := sdk.Util.ParseConfig(context.Background(), exampleConfig, &got, NewDestination().Parameters())
 
 	is.NoErr(err)
 	is.Equal(want, got)
