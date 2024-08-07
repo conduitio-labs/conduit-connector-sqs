@@ -1,4 +1,4 @@
-// Copyright © 2023 Meroxa, Inc.
+// Copyright © 2024 Meroxa, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,10 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
@@ -51,25 +50,15 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 	return nil
 }
 
-func (s *Source) Open(ctx context.Context, _ sdk.Position) error {
-	cfg, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion(s.config.AWSRegion),
-		config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(
-				s.config.AWSAccessKeyID,
-				s.config.AWSSecretAccessKey,
-				"")),
-	)
+func (s *Source) Open(ctx context.Context, _ sdk.Position) (err error) {
+	s.svc, err = common.NewSQSClient(ctx, s.config.Config)
 	if err != nil {
-		return fmt.Errorf("failed to load aws config with given credentials : %w", err)
+		return fmt.Errorf("failed to create source sqs client: %w", err)
 	}
-	// Create a SQS client from just a session.
-	s.svc = sqs.NewFromConfig(cfg)
 
 	queueInput := &sqs.GetQueueUrlInput{
 		QueueName: &s.config.AWSQueue,
 	}
-	// Get URL of queue
 	urlResult, err := s.svc.GetQueueUrl(ctx, queueInput)
 	if err != nil {
 		return fmt.Errorf("failed to get queue amazon sqs URL: %w", err)
