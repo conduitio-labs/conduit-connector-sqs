@@ -50,14 +50,33 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 	return nil
 }
 
-func (s *Source) Open(ctx context.Context, _ sdk.Position) (err error) {
+func (s *Source) Open(ctx context.Context, sdkPos sdk.Position) (err error) {
 	s.svc, err = common.NewSQSClient(ctx, s.config.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create source sqs client: %w", err)
 	}
 
+	sdk.Logger(ctx).Info().Msg("connected to sqs")
+
+	queueName := &s.config.AWSQueue
+	if sdkPos != nil {
+		pos, err := common.ParsePosition(sdkPos)
+		if err != nil {
+			return fmt.Errorf("failed to parse source position: %w", err)
+		}
+
+		if s.config.AWSQueue != "" && s.config.AWSQueue != pos.QueueName {
+			return fmt.Errorf(
+				"the old position contains a different queue name than the connector configuration (%q vs %q), please check if the configured queue name changed since the last run",
+				pos.QueueName, s.config.AWSQueue,
+			)
+		}
+
+		sdk.Logger(ctx).Debug().Msg("queue name from position matches configured queue")
+	}
+
 	queueInput := &sqs.GetQueueUrlInput{
-		QueueName: &s.config.AWSQueue,
+		QueueName: queueName,
 	}
 	urlResult, err := s.svc.GetQueueUrl(ctx, queueInput)
 	if err != nil {
@@ -65,6 +84,8 @@ func (s *Source) Open(ctx context.Context, _ sdk.Position) (err error) {
 	}
 
 	s.queueURL = *urlResult.QueueUrl
+
+	sdk.Logger(ctx).Info().Msg("got sqs queue url")
 
 	return nil
 }
@@ -97,8 +118,13 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		mt[key] = *value.StringValue
 	}
 
+	position := common.Position{
+		ReceiptHandle: *sqsMessages.Messages[0].ReceiptHandle,
+		QueueName:     s.config.AWSQueue,
+	}.ToSdkPosition()
+
 	rec := sdk.Util.Source.NewRecordCreate(
-		sdk.Position(*sqsMessages.Messages[0].ReceiptHandle),
+		position,
 		mt,
 		sdk.RawData(*sqsMessages.Messages[0].MessageId),
 		sdk.RawData(*sqsMessages.Messages[0].Body),
@@ -106,17 +132,21 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	return rec, nil
 }
 
-func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
-	// once message received in queue, remove it
-	receiptHandle := string(position)
-	deleteMessage := &sqs.DeleteMessageInput{
-		QueueUrl:      &s.queueURL,
-		ReceiptHandle: &receiptHandle,
+func (s *Source) Ack(ctx context.Context, sdkPos sdk.Position) error {
+	position, err := common.ParsePosition(sdkPos)
+	if err != nil {
+		return fmt.Errorf("failed to parse position: %w", err)
 	}
 
-	_, err := s.svc.DeleteMessage(ctx, deleteMessage)
-	if err != nil {
-		return fmt.Errorf("failed to delete sqs message with receipt handle %s : %w", string(position), err)
+	deleteMessage := &sqs.DeleteMessageInput{
+		QueueUrl:      &s.queueURL,
+		ReceiptHandle: &position.ReceiptHandle,
+	}
+
+	if _, err := s.svc.DeleteMessage(ctx, deleteMessage); err != nil {
+		return fmt.Errorf(
+			"failed to delete sqs message with receipt handle %s : %w",
+			position.ReceiptHandle, err)
 	}
 
 	return nil
