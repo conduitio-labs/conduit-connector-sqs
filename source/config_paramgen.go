@@ -7,47 +7,56 @@ import (
 	"github.com/conduitio/conduit-commons/config"
 )
 
+const (
+	ConfigAwsAccessKeyId       = "aws.accessKeyId"
+	ConfigAwsQueue             = "aws.queue"
+	ConfigAwsRegion            = "aws.region"
+	ConfigAwsSecretAccessKey   = "aws.secretAccessKey"
+	ConfigAwsUrl               = "aws.url"
+	ConfigAwsVisibilityTimeout = "aws.visibilityTimeout"
+)
+
 func (Config) Parameters() map[string]config.Parameter {
 	return map[string]config.Parameter{
-		"aws.accessKeyId": {
+		ConfigAwsAccessKeyId: {
 			Default:     "",
-			Description: "amazon access key id",
+			Description: "AWSAccessKeyID is the amazon access key id",
 			Type:        config.ParameterTypeString,
 			Validations: []config.Validation{
 				config.ValidationRequired{},
 			},
 		},
-		"aws.queue": {
+		ConfigAwsQueue: {
 			Default:     "",
-			Description: "amazon sqs queue name",
+			Description: "AWSQueue is the sqs queue name",
 			Type:        config.ParameterTypeString,
 			Validations: []config.Validation{
 				config.ValidationRequired{},
 			},
 		},
-		"aws.region": {
+		ConfigAwsRegion: {
 			Default:     "",
-			Description: "amazon sqs region",
+			Description: "AWSRegion is the amazon sqs region",
 			Type:        config.ParameterTypeString,
 			Validations: []config.Validation{
 				config.ValidationRequired{},
 			},
 		},
-		"aws.secretAccessKey": {
+		ConfigAwsSecretAccessKey: {
 			Default:     "",
-			Description: "amazon secret access key",
+			Description: "AWSSecretAccessKey is the amazon secret access key",
 			Type:        config.ParameterTypeString,
 			Validations: []config.Validation{
 				config.ValidationRequired{},
 			},
 		},
-		"aws.url": {
+		ConfigAwsUrl: {
 			Default:     "",
-			Description: "aws.url is the URL for AWS (internal use only).",
+			Description: "AWSURL is the URL for AWS (internal use only).",
 			Type:        config.ParameterTypeString,
 			Validations: []config.Validation{},
 		},
-		"aws.visibilityTimeout": {
+		ConfigAwsVisibilityTimeout: {
 			Default:     "0",
 			Description: "visibility timeout",
 			Type:        config.ParameterTypeInt,
