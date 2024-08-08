@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -132,7 +131,7 @@ func TestDestination_FailNonExistentQueue(t *testing.T) {
 
 	cfg := testutils.IntegrationConfig("nonexistent-testqueue")
 
-	cfg[common.ConfigKeyAWSQueue] = ""
+	cfg[ConfigAwsQueue] = ""
 
 	err := destination.Configure(ctx, cfg)
 	is.NoErr(err)

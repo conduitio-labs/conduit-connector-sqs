@@ -75,7 +75,7 @@ func TestSource_FailBadCreds(t *testing.T) {
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
 	cfg := testutils.IntegrationConfig(testQueue.Name)
 
-	cfg[common.ConfigKeyAWSAccessKeyID] = ""
+	cfg[ConfigAwsSecretAccessKey] = ""
 
 	err := source.Configure(ctx, cfg)
 	is.NoErr(err)

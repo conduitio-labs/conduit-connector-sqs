@@ -23,7 +23,3 @@ type Config struct {
 	// visibility timeout
 	AWSSQSVisibilityTimeout int32 `json:"aws.visibilityTimeout" default:"0"`
 }
-
-const (
-	ConfigKeySQSVisibilityTimeout = "aws.visibilityTimeout"
-)

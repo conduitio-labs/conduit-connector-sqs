@@ -23,7 +23,3 @@ type Config struct {
 	// amazon sqs message delay time
 	AWSSQSMessageDelay int32 `json:"aws.delayTime" default:"0"`
 }
-
-const (
-	ConfigKeyAWSSQSDelayTime = "aws.delayTime"
-)

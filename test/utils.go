@@ -80,10 +80,10 @@ func CreateTestQueue(ctx context.Context, t *testing.T, is *is.I, client *sqs.Cl
 
 func IntegrationConfig(queueName string) map[string]string {
 	return map[string]string{
-		common.ConfigKeyAWSAccessKeyID:     "accessskeymock",
-		common.ConfigKeyAWSSecretAccessKey: "accessssecretmock",
-		common.ConfigKeyAWSRegion:          "us-east-1",
-		common.ConfigKeyAWSURL:             "http://localhost:4566",
-		common.ConfigKeyAWSQueue:           queueName,
+		common.ConfigAwsAccessKeyId:     "accessskeymock",
+		common.ConfigAwsSecretAccessKey: "accessssecretmock",
+		common.ConfigAwsRegion:          "us-east-1",
+		common.ConfigAwsUrl:             "http://localhost:4566",
+		common.ConfigAwsQueue:           queueName,
 	}
 }
