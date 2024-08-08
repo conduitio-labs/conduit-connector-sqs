@@ -17,6 +17,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
@@ -31,10 +32,14 @@ type Source struct {
 	config   Config
 	svc      *sqs.Client
 	queueURL string
+
+	httpClient *http.Client
 }
 
 func NewSource() sdk.Source {
-	return sdk.SourceWithMiddleware(&Source{}, sdk.DefaultSourceMiddleware()...)
+	return sdk.SourceWithMiddleware(&Source{
+		httpClient: &http.Client{},
+	}, sdk.DefaultSourceMiddleware()...)
 }
 
 func (s *Source) Parameters() config.Parameters {
@@ -54,7 +59,7 @@ func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
 }
 
 func (s *Source) Open(ctx context.Context, sdkPos opencdc.Position) (err error) {
-	s.svc, err = common.NewSQSClient(ctx, s.config.Config)
+	s.svc, err = common.NewSQSClient(ctx, s.httpClient, s.config.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create source sqs client: %w", err)
 	}
@@ -156,5 +161,6 @@ func (s *Source) Ack(ctx context.Context, sdkPos opencdc.Position) error {
 }
 
 func (s *Source) Teardown(_ context.Context) error {
+	s.httpClient.CloseIdleConnections()
 	return nil
 }

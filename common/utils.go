@@ -17,6 +17,7 @@ package common
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -44,9 +45,10 @@ func (e *EndpointResolver) ResolveEndpoint(
 	return transport.Endpoint{URI: e.url}, nil
 }
 
-func NewSQSClient(ctx context.Context, cfg Config) (*sqs.Client, error) {
+func NewSQSClient(ctx context.Context, httpClient *http.Client, cfg Config) (*sqs.Client, error) {
 	sqsCfg, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(cfg.AWSRegion),
+		config.WithHTTPClient(httpClient),
 		config.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(
 				cfg.AWSAccessKeyID,
