@@ -131,8 +131,6 @@ func TestDestination_FailNonExistentQueue(t *testing.T) {
 
 	cfg := testutils.IntegrationConfig("nonexistent-testqueue")
 
-	cfg[ConfigAwsQueue] = ""
-
 	err := destination.Configure(ctx, cfg)
 	is.NoErr(err)
 
