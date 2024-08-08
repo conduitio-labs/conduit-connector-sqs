@@ -1,4 +1,4 @@
-// Copyright © 2023 Meroxa, Inc.
+// Copyright © 2024 Meroxa, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,10 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	configv2 "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	"github.com/conduitio/conduit-commons/config"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -54,31 +53,42 @@ func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
 	return nil
 }
 
-func (s *Source) Open(ctx context.Context, _ opencdc.Position) error {
-	cfg, err := configv2.LoadDefaultConfig(ctx,
-		configv2.WithRegion(s.config.AWSRegion),
-		configv2.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(
-				s.config.AWSAccessKeyID,
-				s.config.AWSSecretAccessKey,
-				"")),
-	)
+func (s *Source) Open(ctx context.Context, sdkPos sdk.Position) (err error) {
+	s.svc, err = common.NewSQSClient(ctx, s.config.Config)
 	if err != nil {
-		return fmt.Errorf("failed to load aws config with given credentials : %w", err)
+		return fmt.Errorf("failed to create source sqs client: %w", err)
 	}
-	// Create a SQS client from just a session.
-	s.svc = sqs.NewFromConfig(cfg)
+
+	sdk.Logger(ctx).Info().Msg("connected to sqs")
+
+	queueName := &s.config.AWSQueue
+	if sdkPos != nil {
+		pos, err := common.ParsePosition(sdkPos)
+		if err != nil {
+			return fmt.Errorf("failed to parse source position: %w", err)
+		}
+
+		if s.config.AWSQueue != "" && s.config.AWSQueue != pos.QueueName {
+			return fmt.Errorf(
+				"the old position contains a different queue name than the connector configuration (%q vs %q), please check if the configured queue name changed since the last run",
+				pos.QueueName, s.config.AWSQueue,
+			)
+		}
+
+		sdk.Logger(ctx).Debug().Msg("queue name from position matches configured queue")
+	}
 
 	queueInput := &sqs.GetQueueUrlInput{
-		QueueName: &s.config.AWSQueue,
+		QueueName: queueName,
 	}
-	// Get URL of queue
 	urlResult, err := s.svc.GetQueueUrl(ctx, queueInput)
 	if err != nil {
 		return fmt.Errorf("failed to get queue amazon sqs URL: %w", err)
 	}
 
 	s.queueURL = *urlResult.QueueUrl
+
+	sdk.Logger(ctx).Info().Msg("got sqs queue url")
 
 	return nil
 }
@@ -111,6 +121,11 @@ func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 		mt[key] = *value.StringValue
 	}
 
+	position := common.Position{
+		ReceiptHandle: *sqsMessages.Messages[0].ReceiptHandle,
+		QueueName:     s.config.AWSQueue,
+	}.ToSdkPosition()
+
 	rec := sdk.Util.Source.NewRecordCreate(
 		opencdc.Position(*sqsMessages.Messages[0].ReceiptHandle),
 		mt,
@@ -120,17 +135,21 @@ func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 	return rec, nil
 }
 
-func (s *Source) Ack(ctx context.Context, position opencdc.Position) error {
-	// once message received in queue, remove it
-	receiptHandle := string(position)
-	deleteMessage := &sqs.DeleteMessageInput{
-		QueueUrl:      &s.queueURL,
-		ReceiptHandle: &receiptHandle,
+func (s *Source) Ack(ctx context.Context, sdkPos sdk.Position) error {
+	position, err := common.ParsePosition(sdkPos)
+	if err != nil {
+		return fmt.Errorf("failed to parse position: %w", err)
 	}
 
-	_, err := s.svc.DeleteMessage(ctx, deleteMessage)
-	if err != nil {
-		return fmt.Errorf("failed to delete sqs message with receipt handle %s : %w", string(position), err)
+	deleteMessage := &sqs.DeleteMessageInput{
+		QueueUrl:      &s.queueURL,
+		ReceiptHandle: &position.ReceiptHandle,
+	}
+
+	if _, err := s.svc.DeleteMessage(ctx, deleteMessage); err != nil {
+		return fmt.Errorf(
+			"failed to delete sqs message with receipt handle %s : %w",
+			position.ReceiptHandle, err)
 	}
 
 	return nil

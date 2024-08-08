@@ -1,4 +1,4 @@
-// Copyright © 2023 Meroxa, Inc.
+// Copyright © 2024 Meroxa, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,10 +19,9 @@ import (
 	"fmt"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	configv2 "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	"github.com/conduitio/conduit-commons/config"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -54,20 +53,11 @@ func (d *Destination) Configure(ctx context.Context, cfg config.Config) error {
 	return nil
 }
 
-func (d *Destination) Open(ctx context.Context) error {
-	cfg, err := configv2.LoadDefaultConfig(ctx,
-		configv2.WithRegion(d.config.AWSRegion),
-		configv2.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(
-				d.config.AWSAccessKeyID,
-				d.config.AWSSecretAccessKey,
-				"")),
-	)
+func (d *Destination) Open(ctx context.Context) (err error) {
+	d.svc, err = common.NewSQSClient(ctx, d.config.Config)
 	if err != nil {
-		return fmt.Errorf("failed to load amazon config with given credentials : %w", err)
+		return fmt.Errorf("failed to create destination sqs client: %w", err)
 	}
-	// Create a SQS client from just a session.
-	d.svc = sqs.NewFromConfig(cfg)
 
 	queueInput := &sqs.GetQueueUrlInput{
 		QueueName: &d.config.AWSQueue,

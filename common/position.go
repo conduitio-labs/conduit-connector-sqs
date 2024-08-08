@@ -1,4 +1,4 @@
-// Copyright © 2024 Meroxa, Inc.
+// Copyright © 2023 Meroxa, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,13 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package common
 
 import (
-	sqs "github.com/conduitio-labs/conduit-connector-sqs"
+	"encoding/json"
+
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
-func main() {
-	sdk.Serve(sqs.Connector)
+type Position struct {
+	ReceiptHandle string `json:"receipt_handle"`
+	QueueName     string `json:"queue_name"`
+}
+
+func ParsePosition(sdkPosition sdk.Position) (Position, error) {
+	var position Position
+	err := json.Unmarshal(sdkPosition, &position)
+	return position, err
+}
+
+func (p Position) ToSdkPosition() sdk.Position {
+	bs, err := json.Marshal(p)
+	if err != nil {
+		panic(err)
+	}
+	return sdk.Position(bs)
 }
