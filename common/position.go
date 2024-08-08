@@ -17,7 +17,7 @@ package common
 import (
 	"encoding/json"
 
-	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/conduitio/conduit-commons/opencdc"
 )
 
 type Position struct {
@@ -25,16 +25,16 @@ type Position struct {
 	QueueName     string `json:"queue_name"`
 }
 
-func ParsePosition(sdkPosition sdk.Position) (Position, error) {
+func ParsePosition(sdkPosition opencdc.Position) (Position, error) {
 	var position Position
 	err := json.Unmarshal(sdkPosition, &position)
 	return position, err
 }
 
-func (p Position) ToSdkPosition() sdk.Position {
+func (p Position) ToSdkPosition() opencdc.Position {
 	bs, err := json.Marshal(p)
 	if err != nil {
 		panic(err)
 	}
-	return sdk.Position(bs)
+	return opencdc.Position(bs)
 }

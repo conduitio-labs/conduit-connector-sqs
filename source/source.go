@@ -53,7 +53,7 @@ func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
 	return nil
 }
 
-func (s *Source) Open(ctx context.Context, sdkPos sdk.Position) (err error) {
+func (s *Source) Open(ctx context.Context, sdkPos opencdc.Position) (err error) {
 	s.svc, err = common.NewSQSClient(ctx, s.config.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create source sqs client: %w", err)
@@ -127,7 +127,7 @@ func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 	}.ToSdkPosition()
 
 	rec := sdk.Util.Source.NewRecordCreate(
-		opencdc.Position(*sqsMessages.Messages[0].ReceiptHandle),
+		position,
 		mt,
 		opencdc.RawData(*sqsMessages.Messages[0].MessageId),
 		opencdc.RawData(*sqsMessages.Messages[0].Body),
@@ -135,7 +135,7 @@ func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 	return rec, nil
 }
 
-func (s *Source) Ack(ctx context.Context, sdkPos sdk.Position) error {
+func (s *Source) Ack(ctx context.Context, sdkPos opencdc.Position) error {
 	position, err := common.ParsePosition(sdkPos)
 	if err != nil {
 		return fmt.Errorf("failed to parse position: %w", err)

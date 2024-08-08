@@ -50,8 +50,8 @@ func (Config) Parameters() map[string]config.Parameter {
 		"aws.url": {
 			Default:     "",
 			Description: "aws.url is the URL for AWS (internal use only).",
-			Type:        sdk.ParameterTypeString,
-			Validations: []sdk.Validation{},
+			Type:        config.ParameterTypeString,
+			Validations: []config.Validation{},
 		},
 	}
 }
