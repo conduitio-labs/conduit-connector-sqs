@@ -14,6 +14,8 @@
 
 package common
 
+//go:generate paramgen -output=config_paramgen.go Config
+
 type Config struct {
 	// AWSAccessKeyID is the amazon access key id
 	AWSAccessKeyID string `json:"aws.accessKeyId" validate:"required"`
@@ -26,15 +28,3 @@ type Config struct {
 	// AWSURL is the URL for AWS (internal use only).
 	AWSURL string `json:"aws.url"`
 }
-
-const (
-	ConfigKeyAWSAccessKeyID = "aws.accessKeyId"
-
-	ConfigKeyAWSSecretAccessKey = "aws.secretAccessKey"
-
-	ConfigKeyAWSRegion = "aws.region"
-
-	ConfigKeyAWSQueue = "aws.queue"
-
-	ConfigKeyAWSURL = "aws.url"
-)

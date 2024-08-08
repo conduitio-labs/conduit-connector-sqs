@@ -22,8 +22,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
+	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/matryer/is"
 )
@@ -45,16 +45,16 @@ func TestDestination_SuccessfulMessageSend(t *testing.T) {
 	is := is.New(t)
 	ctx := testutils.TestContext(t)
 
-	metadata := sdk.Metadata{}
+	metadata := opencdc.Metadata{}
 	destination := NewDestination()
 	defer func() { is.NoErr(destination.Teardown(ctx)) }()
 
 	messageBody := "Test message body"
 	record := sdk.Util.Source.NewRecordCreate(
-		sdk.Position("111111"),
+		opencdc.Position("111111"),
 		metadata,
-		sdk.RawData("1111111"),
-		sdk.RawData(messageBody),
+		opencdc.RawData("1111111"),
+		opencdc.RawData(messageBody),
 	)
 
 	testClient := testutils.NewSQSClient(ctx, is)
@@ -67,7 +67,7 @@ func TestDestination_SuccessfulMessageSend(t *testing.T) {
 	err = destination.Open(ctx)
 	is.NoErr(err)
 
-	ret, err := destination.Write(ctx, []sdk.Record{record})
+	ret, err := destination.Write(ctx, []opencdc.Record{record})
 	is.NoErr(err)
 
 	is.Equal(ret, 1)
@@ -100,16 +100,16 @@ func TestDestination_FailBadRecord(t *testing.T) {
 	queueName := testutils.CreateTestQueue(ctx, t, is, testClient)
 	cfg := testutils.IntegrationConfig(queueName.Name)
 
-	metadata := sdk.Metadata{}
+	metadata := opencdc.Metadata{}
 	destination := NewDestination()
 	defer func() { is.NoErr(destination.Teardown(ctx)) }()
 
 	messageBody := "Test message body"
 	record := sdk.Util.Source.NewRecordCreate(
-		sdk.Position(""),
+		opencdc.Position(""),
 		metadata,
-		sdk.RawData(""),
-		sdk.RawData(messageBody),
+		opencdc.RawData(""),
+		opencdc.RawData(messageBody),
 	)
 
 	err := destination.Configure(ctx, cfg)
@@ -118,7 +118,7 @@ func TestDestination_FailBadRecord(t *testing.T) {
 	err = destination.Open(ctx)
 	is.NoErr(err)
 
-	_, err = destination.Write(ctx, []sdk.Record{record})
+	_, err = destination.Write(ctx, []opencdc.Record{record})
 	is.True(strings.Contains(err.Error(), "AWS.SimpleQueueService.InvalidBatchEntryId"))
 }
 
@@ -130,8 +130,6 @@ func TestDestination_FailNonExistentQueue(t *testing.T) {
 	defer func() { is.NoErr(destination.Teardown(ctx)) }()
 
 	cfg := testutils.IntegrationConfig("nonexistent-testqueue")
-
-	cfg[common.ConfigKeyAWSQueue] = ""
 
 	err := destination.Configure(ctx, cfg)
 	is.NoErr(err)

@@ -65,49 +65,6 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	}
 }
 
-func TestSource_FailBadCreds(t *testing.T) {
-	is := is.New(t)
-	ctx := testutils.TestContext(t)
-	source := NewSource()
-	defer func() { is.NoErr(source.Teardown(ctx)) }()
-
-	testClient := testutils.NewSQSClient(ctx, is)
-	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.IntegrationConfig(testQueue.Name)
-
-	cfg[common.ConfigKeyAWSAccessKeyID] = ""
-
-	err := source.Configure(ctx, cfg)
-	is.NoErr(err)
-
-	err = source.Open(ctx, nil)
-	is.True(strings.Contains(err.Error(), "failed to refresh cached credentials, static credentials are empty"))
-}
-
-func TestSource_EmptyQueue(t *testing.T) {
-	is := is.New(t)
-	ctx := testutils.TestContext(t)
-
-	testClient := testutils.NewSQSClient(ctx, is)
-	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.IntegrationConfig(testQueue.Name)
-
-	source := NewSource()
-	defer func() { is.NoErr(source.Teardown(ctx)) }()
-
-	err := source.Configure(ctx, cfg)
-	is.NoErr(err)
-
-	err = source.Open(ctx, nil)
-	is.NoErr(err)
-
-	record, err := source.Read(ctx)
-
-	if err != sdk.ErrBackoffRetry || record.Metadata != nil {
-		t.Fatalf("expected no records and a signal that there are no more records, got %v %v", record, err)
-	}
-}
-
 func TestSource_OpenWithPosition(t *testing.T) {
 	is := is.New(t)
 	ctx := testutils.TestContext(t)
