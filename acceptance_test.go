@@ -48,16 +48,16 @@ func TestAcceptance(t *testing.T) {
 				defer closeTestClient()
 
 				queue := testutils.CreateTestQueue(ctx, t, is, testClient)
-				sourceConfig[common.ConfigKeyAWSQueue] = queue.Name
-				sourceConfig[source.ConfigKeySQSVisibilityTimeout] = "1"
-				destinationConfig[common.ConfigKeyAWSQueue] = queue.Name
+				sourceConfig[common.ConfigAwsQueue] = queue.Name
+				sourceConfig[source.ConfigAwsVisibilityTimeout] = "1"
+				destinationConfig[common.ConfigAwsQueue] = queue.Name
 
 				sdk.Logger(ctx).Info().Msgf("queue name: %v", queue.Name)
 				sdk.Logger(ctx).Info().Msgf("queue url: %v", *queue.URL)
 			},
 			Skip: []string{
-				"TestSource_Configure_RequiredParams",
-				"TestDestination_Configure_RequiredParams",
+				// "TestSource_Configure_RequiredParams",
+				// "TestDestination_Configure_RequiredParams",
 				// "TestDestination_Configure_Success",
 				// "TestDestination_Parameters_Success",
 				// "TestDestination_Write_Succes",
