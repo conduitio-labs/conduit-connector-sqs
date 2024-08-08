@@ -31,7 +31,9 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	source := NewSource()
 	defer func() { is.NoErr(source.Teardown(ctx)) }()
 
-	testClient := testutils.NewSQSClient(ctx, is)
+	testClient, cleanTestClient := testutils.NewSQSClient(ctx, is)
+	defer cleanTestClient()
+
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
 	cfg := testutils.IntegrationConfig(testQueue.Name)
 
@@ -69,46 +71,9 @@ func TestSource_OpenWithPosition(t *testing.T) {
 	is := is.New(t)
 	ctx := testutils.TestContext(t)
 
-	testClient := testutils.NewSQSClient(ctx, is)
-	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.IntegrationConfig(testQueue.Name)
-	{
-		source := NewSource()
-		is.NoErr(source.Configure(ctx, cfg))
+	testClient, cleanTestClient := testutils.NewSQSClient(ctx, is)
+	defer cleanTestClient()
 
-		pos := common.Position{
-			ReceiptHandle: "test-handle",
-			QueueName:     testQueue.Name,
-		}
-
-		is.NoErr(source.Open(ctx, pos.ToSdkPosition()))
-	}
-	{
-		source := NewSource()
-		is.NoErr(source.Configure(ctx, cfg))
-
-		pos := common.Position{
-			ReceiptHandle: "test-handle",
-			QueueName:     "other-test-queue",
-		}
-
-		err := source.Open(ctx, pos.ToSdkPosition())
-		if err == nil {
-			is.Fail() // expected error on wrong position
-		}
-
-		is.True(strings.Contains(
-			err.Error(),
-			"the old position contains a different queue name than the connector configuration",
-		))
-	}
-}
-
-func TestSource_OpenWithPosition(t *testing.T) {
-	is := is.New(t)
-	ctx := testutils.TestContext(t)
-
-	testClient := testutils.NewSQSClient(ctx, is)
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
 	cfg := testutils.IntegrationConfig(testQueue.Name)
 	{
