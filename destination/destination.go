@@ -35,6 +35,8 @@ type Destination struct {
 	svc      *sqs.Client
 	queueURL string
 
+	// httpClient allows us to cleanup left over http connections. Useful to not
+	// leak goroutines when tearing down the connector
 	httpClient *http.Client
 }
 

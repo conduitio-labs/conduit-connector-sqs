@@ -33,6 +33,8 @@ type Source struct {
 	svc      *sqs.Client
 	queueURL string
 
+	// httpClient allows us to cleanup left over http connections. Useful to not
+	// leak goroutines when tearing down the connector
 	httpClient *http.Client
 }
 
@@ -49,8 +51,7 @@ func (s *Source) Parameters() config.Parameters {
 func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
 	sdk.Logger(ctx).Debug().Msg("Configuring Source Connector.")
 
-	err := sdk.Util.ParseConfig(ctx, cfg, &s.config, NewSource().Parameters())
-
+	err := sdk.Util.ParseConfig(ctx, cfg, &s.config, s.Parameters())
 	if err != nil {
 		return fmt.Errorf("failed to parse source config : %w", err)
 	}
@@ -98,8 +99,7 @@ func (s *Source) Open(ctx context.Context, sdkPos opencdc.Position) (err error) 
 	return nil
 }
 
-func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
-	var err error
+func (s *Source) Read(ctx context.Context) (rec opencdc.Record, err error) {
 	receiveMessage := &sqs.ReceiveMessageInput{
 		MessageAttributeNames: []string{
 			string(types.QueueAttributeNameAll),
@@ -112,7 +112,7 @@ func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 	// grab a message from queue
 	sqsMessages, err := s.svc.ReceiveMessage(ctx, receiveMessage)
 	if err != nil {
-		return opencdc.Record{}, fmt.Errorf("error retrieving amazon sqs messages: %w", err)
+		return rec, fmt.Errorf("error retrieving amazon sqs messages: %w", err)
 	}
 
 	// if there are no messages in queue, backoff
@@ -120,22 +120,22 @@ func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 		return opencdc.Record{}, sdk.ErrBackoffRetry
 	}
 
-	attributes := sqsMessages.Messages[0].MessageAttributes
+	message := sqsMessages.Messages[0]
+
 	mt := opencdc.Metadata{}
-	for key, value := range attributes {
+	for key, value := range message.MessageAttributes {
 		mt[key] = *value.StringValue
 	}
 
 	position := common.Position{
-		ReceiptHandle: *sqsMessages.Messages[0].ReceiptHandle,
+		ReceiptHandle: *message.ReceiptHandle,
 		QueueName:     s.config.AWSQueue,
 	}.ToSdkPosition()
 
-	rec := sdk.Util.Source.NewRecordCreate(
-		position,
-		mt,
-		opencdc.RawData(*sqsMessages.Messages[0].MessageId),
-		opencdc.RawData(*sqsMessages.Messages[0].Body),
+	rec = sdk.Util.Source.NewRecordCreate(
+		position, mt,
+		opencdc.RawData(*message.MessageId),
+		opencdc.RawData(*message.Body),
 	)
 	return rec, nil
 }
@@ -153,7 +153,7 @@ func (s *Source) Ack(ctx context.Context, sdkPos opencdc.Position) error {
 
 	if _, err := s.svc.DeleteMessage(ctx, deleteMessage); err != nil {
 		return fmt.Errorf(
-			"failed to delete sqs message with receipt handle %s : %w",
+			"failed to delete sqs message with receipt handle %s: %w",
 			position.ReceiptHandle, err)
 	}
 

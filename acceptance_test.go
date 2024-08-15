@@ -31,9 +31,11 @@ func TestAcceptance(t *testing.T) {
 
 	ctx := testutils.TestContext(t)
 	sourceConfig := testutils.IntegrationConfig("")
+	sourceConfig[source.ConfigAwsVisibilityTimeout] = "1"
+
 	destinationConfig := testutils.IntegrationConfig("")
 
-	sdk.AcceptanceTest(t, sdk.ConfigurableAcceptanceTestDriver{
+	driver := sdk.ConfigurableAcceptanceTestDriver{
 		Config: sdk.ConfigurableAcceptanceTestDriverConfig{
 			Context:           ctx,
 			GoleakOptions:     []goleak.Option{goleak.IgnoreCurrent()},
@@ -49,7 +51,6 @@ func TestAcceptance(t *testing.T) {
 
 				queue := testutils.CreateTestQueue(ctx, t, is, testClient)
 				sourceConfig[common.ConfigAwsQueue] = queue.Name
-				sourceConfig[source.ConfigAwsVisibilityTimeout] = "1"
 				destinationConfig[common.ConfigAwsQueue] = queue.Name
 
 				sdk.Logger(ctx).Info().Msgf("queue name: %v", queue.Name)
@@ -74,5 +75,7 @@ func TestAcceptance(t *testing.T) {
 			WriteTimeout: 5000 * time.Millisecond,
 			ReadTimeout:  5000 * time.Millisecond,
 		},
-	})
+	}
+
+	sdk.AcceptanceTest(t, driver)
 }
