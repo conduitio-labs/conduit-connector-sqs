@@ -17,6 +17,7 @@ package destination
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -83,6 +84,8 @@ func (d *Destination) Open(ctx context.Context) (err error) {
 	return nil
 }
 
+const GroupIDKey = "groupID"
+
 func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int, error) {
 	for i := 0; i < len(records); i += 10 {
 		end := i + 10
@@ -100,9 +103,12 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 
 			messageAttributes := map[string]types.MessageAttributeValue{}
 			for key, value := range record.Metadata {
-				messageAttributes[key] = types.MessageAttributeValue{
+				keyEncoded := base64.RawURLEncoding.EncodeToString([]byte(key))
+				valueEncoded := base64.RawURLEncoding.EncodeToString([]byte(value))
+
+				messageAttributes[keyEncoded] = types.MessageAttributeValue{
 					DataType:    aws.String("String"),
-					StringValue: aws.String(value),
+					StringValue: aws.String(valueEncoded),
 				}
 			}
 
@@ -111,8 +117,13 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 				id = id[:80]
 			}
 
-			// construct record to send to destination
+			var messageGroupID *string
+			if groupID, ok := record.Metadata[GroupIDKey]; ok {
+				messageGroupID = &groupID
+			}
+
 			sqsRecords.Entries = append(sqsRecords.Entries, types.SendMessageBatchRequestEntry{
+				MessageGroupId:    messageGroupID,
 				MessageAttributes: messageAttributes,
 				MessageBody:       &messageBody,
 				DelaySeconds:      d.config.AWSSQSMessageDelay,
@@ -120,10 +131,22 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 			})
 		}
 
-		_, err := d.svc.SendMessageBatch(ctx, &sqsRecords)
+		sendMessageOutput, err := d.svc.SendMessageBatch(ctx, &sqsRecords)
 		if err != nil {
 			return 0, fmt.Errorf("failed to write sqs message : %w", err)
 		}
+
+		if len(sendMessageOutput.Failed) != 0 {
+			var errs []error
+			for _, failed := range sendMessageOutput.Failed {
+				err := fmt.Errorf("failed to deliver message (%s): %s", *failed.Id, *failed.Message)
+				errs = append(errs, err)
+			}
+
+			return 0, errors.Join(errs...)
+		}
+
+		sdk.Logger(ctx).Trace().Msgf("wrote %v records", len(recordsChunk))
 	}
 
 	return len(records), nil
