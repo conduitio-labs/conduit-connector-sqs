@@ -15,6 +15,7 @@
 package sqs
 
 import (
+	"encoding/base64"
 	"fmt"
 	"testing"
 	"time"
@@ -93,6 +94,16 @@ type testDriver struct {
 
 func (d testDriver) GenerateRecord(t *testing.T, op opencdc.Operation) opencdc.Record {
 	rec := d.ConfigurableAcceptanceTestDriver.GenerateRecord(t, op)
+	for key := range rec.Metadata {
+		val := rec.Metadata[key]
+		delete(rec.Metadata, key)
+
+		// sqs is restrictive on the kind of chars allowed as message attributes.
+		key = base64.RawURLEncoding.EncodeToString([]byte(key))
+		val = base64.RawURLEncoding.EncodeToString([]byte(val))
+		rec.Metadata[key] = val
+	}
+
 	rec.Metadata[destination.GroupIDKey] = "test-group-id"
 
 	return rec

@@ -94,24 +94,22 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 		}
 
 		recordsChunk := records[i:end]
-		sqsRecords := sqs.SendMessageBatchInput{
-			QueueUrl: &d.queueURL,
-		}
+		sqsRecords := sqs.SendMessageBatchInput{QueueUrl: &d.queueURL}
 
 		for _, record := range recordsChunk {
 			messageBody := string(record.Bytes())
 
 			messageAttributes := map[string]types.MessageAttributeValue{}
 			for key, value := range record.Metadata {
-				keyEncoded := base64.RawURLEncoding.EncodeToString([]byte(key))
-				valueEncoded := base64.RawURLEncoding.EncodeToString([]byte(value))
-
-				messageAttributes[keyEncoded] = types.MessageAttributeValue{
+				messageAttributes[key] = types.MessageAttributeValue{
 					DataType:    aws.String("String"),
-					StringValue: aws.String(valueEncoded),
+					StringValue: aws.String(value),
 				}
 			}
 
+			// sqs has restrictions on what kind of characters are allowed as a batch record id.
+			// As the id in this case is only relevant for the records of the batch itself, we can
+			// just base64 encode the key and adapt to this limitation.
 			id := base64.RawURLEncoding.EncodeToString(record.Key.Bytes())
 			if len(id) > 80 {
 				id = id[:80]
@@ -133,7 +131,7 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 
 		sendMessageOutput, err := d.svc.SendMessageBatch(ctx, &sqsRecords)
 		if err != nil {
-			return 0, fmt.Errorf("failed to write sqs message : %w", err)
+			return 0, fmt.Errorf("failed to write sqs message: %w", err)
 		}
 
 		if len(sendMessageOutput.Failed) != 0 {
