@@ -84,9 +84,7 @@ func (s *Source) Open(ctx context.Context, sdkPos opencdc.Position) (err error) 
 		sdk.Logger(ctx).Debug().Msg("queue name from position matches configured queue")
 	}
 
-	queueInput := &sqs.GetQueueUrlInput{
-		QueueName: queueName,
-	}
+	queueInput := &sqs.GetQueueUrlInput{QueueName: queueName}
 	urlResult, err := s.svc.GetQueueUrl(ctx, queueInput)
 	if err != nil {
 		return fmt.Errorf("failed to get queue amazon sqs URL: %w", err)
@@ -94,7 +92,7 @@ func (s *Source) Open(ctx context.Context, sdkPos opencdc.Position) (err error) 
 
 	s.queueURL = *urlResult.QueueUrl
 
-	sdk.Logger(ctx).Info().Msg("got sqs queue url")
+	sdk.Logger(ctx).Info().Msgf("listening to queue %v", s.queueURL)
 
 	return nil
 }

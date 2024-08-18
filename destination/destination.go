@@ -81,6 +81,8 @@ func (d *Destination) Open(ctx context.Context) (err error) {
 
 	d.queueURL = *urlResult.QueueUrl
 
+	sdk.Logger(ctx).Info().Msgf("writing to queue %v", d.queueURL)
+
 	return nil
 }
 
