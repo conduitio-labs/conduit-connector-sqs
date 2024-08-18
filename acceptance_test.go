@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
+	"github.com/conduitio-labs/conduit-connector-sqs/source"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -32,6 +33,7 @@ func TestAcceptance(t *testing.T) {
 
 	ctx := testutils.TestContext(t)
 	sourceConfig := testutils.IntegrationConfig("")
+	sourceConfig[source.ConfigAwsVisibilityTimeout] = "1"
 	destinationConfig := testutils.IntegrationConfig("")
 
 	driver := sdk.ConfigurableAcceptanceTestDriver{
@@ -53,11 +55,10 @@ func TestAcceptance(t *testing.T) {
 				destinationConfig[common.ConfigAwsQueue] = queue.Name
 			},
 			Skip: []string{
-				"TestSource_Open_ResumeAtPositionCDC",
 				"TestSource_Open_ResumeAtPositionSnapshot",
 			},
-			WriteTimeout: 500 * time.Millisecond,
-			ReadTimeout:  500 * time.Millisecond,
+			WriteTimeout: 5000 * time.Millisecond,
+			ReadTimeout:  5000 * time.Millisecond,
 		},
 	}
 
