@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
-	"github.com/conduitio-labs/conduit-connector-sqs/source"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -32,17 +31,16 @@ func TestAcceptance(t *testing.T) {
 	is := is.New(t)
 
 	ctx := testutils.TestContext(t)
-	sourceConfig := testutils.IntegrationConfig("")
-	sourceConfig[source.ConfigAwsVisibilityTimeout] = "1"
-	destinationConfig := testutils.IntegrationConfig("")
+	srcCfg := testutils.SourceConfig("")
+	destCfg := testutils.DestinationConfig("")
 
 	driver := sdk.ConfigurableAcceptanceTestDriver{
 		Config: sdk.ConfigurableAcceptanceTestDriverConfig{
 			Context:           ctx,
 			GoleakOptions:     []goleak.Option{goleak.IgnoreCurrent()},
 			Connector:         Connector,
-			SourceConfig:      sourceConfig,
-			DestinationConfig: destinationConfig,
+			SourceConfig:      srcCfg,
+			DestinationConfig: destCfg,
 			BeforeTest: func(t *testing.T) {
 				// sqs client creation must be created and cleaned up inside
 				// BeforeTest so that goleak doesn't alert of a false positive http
@@ -51,8 +49,8 @@ func TestAcceptance(t *testing.T) {
 				defer closeTestClient()
 
 				queue := testutils.CreateTestQueue(ctx, t, is, testClient)
-				sourceConfig[common.ConfigAwsQueue] = queue.Name
-				destinationConfig[common.ConfigAwsQueue] = queue.Name
+				srcCfg[common.SourceConfigAwsQueue] = queue.Name
+				destCfg[common.DestinationConfigAwsQueue] = queue.Name
 			},
 			Skip: []string{
 				// This test is not compatible with how sqs works. When trying to

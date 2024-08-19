@@ -8,16 +8,18 @@ import (
 )
 
 const (
-	ConfigAwsAccessKeyId     = "aws.accessKeyId"
-	ConfigAwsQueue           = "aws.queue"
-	ConfigAwsRegion          = "aws.region"
-	ConfigAwsSecretAccessKey = "aws.secretAccessKey"
-	ConfigAwsUrl             = "aws.url"
+	SourceConfigAwsAccessKeyId       = "aws.accessKeyId"
+	SourceConfigAwsQueue             = "aws.queue"
+	SourceConfigAwsRegion            = "aws.region"
+	SourceConfigAwsSecretAccessKey   = "aws.secretAccessKey"
+	SourceConfigAwsUrl               = "aws.url"
+	SourceConfigAwsVisibilityTimeout = "aws.visibilityTimeout"
+	SourceConfigAwsWaitTimeSeconds   = "aws.waitTimeSeconds"
 )
 
-func (Config) Parameters() map[string]config.Parameter {
+func (SourceConfig) Parameters() map[string]config.Parameter {
 	return map[string]config.Parameter{
-		ConfigAwsAccessKeyId: {
+		SourceConfigAwsAccessKeyId: {
 			Default:     "",
 			Description: "AWSAccessKeyID is the amazon access key id",
 			Type:        config.ParameterTypeString,
@@ -25,7 +27,7 @@ func (Config) Parameters() map[string]config.Parameter {
 				config.ValidationRequired{},
 			},
 		},
-		ConfigAwsQueue: {
+		SourceConfigAwsQueue: {
 			Default:     "",
 			Description: "AWSQueue is the sqs queue name",
 			Type:        config.ParameterTypeString,
@@ -33,7 +35,7 @@ func (Config) Parameters() map[string]config.Parameter {
 				config.ValidationRequired{},
 			},
 		},
-		ConfigAwsRegion: {
+		SourceConfigAwsRegion: {
 			Default:     "",
 			Description: "AWSRegion is the amazon sqs region",
 			Type:        config.ParameterTypeString,
@@ -41,7 +43,7 @@ func (Config) Parameters() map[string]config.Parameter {
 				config.ValidationRequired{},
 			},
 		},
-		ConfigAwsSecretAccessKey: {
+		SourceConfigAwsSecretAccessKey: {
 			Default:     "",
 			Description: "AWSSecretAccessKey is the amazon secret access key",
 			Type:        config.ParameterTypeString,
@@ -49,10 +51,22 @@ func (Config) Parameters() map[string]config.Parameter {
 				config.ValidationRequired{},
 			},
 		},
-		ConfigAwsUrl: {
+		SourceConfigAwsUrl: {
 			Default:     "",
 			Description: "AWSURL is the URL for AWS (internal use only).",
 			Type:        config.ParameterTypeString,
+			Validations: []config.Validation{},
+		},
+		SourceConfigAwsVisibilityTimeout: {
+			Default:     "0",
+			Description: "VisibilityTimeout is the duration (in seconds) that the received messages\nare hidden from subsequent reads after being retrieved.",
+			Type:        config.ParameterTypeInt,
+			Validations: []config.Validation{},
+		},
+		SourceConfigAwsWaitTimeSeconds: {
+			Default:     "10",
+			Description: "WaitTimeSeconds is the duration (in seconds) for which the call waits for\na message to arrive in the queue before returning.",
+			Type:        config.ParameterTypeInt,
 			Validations: []config.Validation{},
 		},
 	}

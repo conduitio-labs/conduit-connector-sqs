@@ -61,7 +61,7 @@ func TestDestination_SuccessfulMessageSend(t *testing.T) {
 	defer closeTestClient()
 
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.IntegrationConfig(testQueue.Name)
+	cfg := testutils.DestinationConfig(testQueue.Name)
 
 	err := destination.Configure(ctx, cfg)
 	is.NoErr(err)
@@ -102,7 +102,7 @@ func TestDestination_FailBadRecord(t *testing.T) {
 	defer closeTestClient()
 
 	queueName := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.IntegrationConfig(queueName.Name)
+	cfg := testutils.DestinationConfig(queueName.Name)
 
 	metadata := opencdc.Metadata{}
 	destination := NewDestination()
@@ -133,7 +133,7 @@ func TestDestination_FailNonExistentQueue(t *testing.T) {
 	destination := NewDestination()
 	defer func() { is.NoErr(destination.Teardown(ctx)) }()
 
-	cfg := testutils.IntegrationConfig("nonexistent-testqueue")
+	cfg := testutils.DestinationConfig("nonexistent-testqueue")
 
 	err := destination.Configure(ctx, cfg)
 	is.NoErr(err)

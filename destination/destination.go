@@ -32,7 +32,7 @@ import (
 
 type Destination struct {
 	sdk.UnimplementedDestination
-	config   Config
+	config   common.DestinationConfig
 	svc      *sqs.Client
 	queueURL string
 
@@ -48,7 +48,7 @@ func NewDestination() sdk.Destination {
 }
 
 func (d *Destination) Parameters() config.Parameters {
-	return Config{}.Parameters()
+	return common.DestinationConfig{}.Parameters()
 }
 
 func (d *Destination) Configure(ctx context.Context, cfg config.Config) error {
@@ -126,7 +126,7 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 				MessageGroupId:    messageGroupID,
 				MessageAttributes: messageAttributes,
 				MessageBody:       &messageBody,
-				DelaySeconds:      d.config.AWSSQSMessageDelay,
+				DelaySeconds:      d.config.MessageDelay,
 				Id:                &id,
 			})
 		}

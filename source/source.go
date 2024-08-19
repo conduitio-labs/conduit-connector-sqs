@@ -29,7 +29,7 @@ import (
 
 type Source struct {
 	sdk.UnimplementedSource
-	config   Config
+	config   common.SourceConfig
 	svc      *sqs.Client
 	queueURL string
 
@@ -45,7 +45,7 @@ func NewSource() sdk.Source {
 }
 
 func (s *Source) Parameters() config.Parameters {
-	return Config{}.Parameters()
+	return common.SourceConfig{}.Parameters()
 }
 
 func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
@@ -104,7 +104,8 @@ func (s *Source) Read(ctx context.Context) (rec opencdc.Record, err error) {
 		},
 		QueueUrl:            &s.queueURL,
 		MaxNumberOfMessages: 1,
-		VisibilityTimeout:   s.config.AWSSQSVisibilityTimeout,
+		VisibilityTimeout:   s.config.VisibilityTimeout,
+		WaitTimeSeconds:     s.config.WaitTimeSeconds,
 	}
 
 	// grab a message from queue

@@ -14,8 +14,6 @@
 
 package common
 
-//go:generate paramgen -output=config_paramgen.go Config
-
 type Config struct {
 	// AWSAccessKeyID is the amazon access key id
 	AWSAccessKeyID string `json:"aws.accessKeyId" validate:"required"`
@@ -27,4 +25,26 @@ type Config struct {
 	AWSQueue string `json:"aws.queue" validate:"required"`
 	// AWSURL is the URL for AWS (internal use only).
 	AWSURL string `json:"aws.url"`
+}
+
+//go:generate paramgen -output=source_paramgen.go SourceConfig
+
+type SourceConfig struct {
+	Config
+	// VisibilityTimeout is the duration (in seconds) that the received messages
+	// are hidden from subsequent reads after being retrieved.
+	VisibilityTimeout int32 `json:"aws.visibilityTimeout" default:"0"`
+
+	// WaitTimeSeconds is the duration (in seconds) for which the call waits for
+	// a message to arrive in the queue before returning.
+	WaitTimeSeconds int32 `json:"aws.waitTimeSeconds" default:"10"`
+}
+
+//go:generate paramgen -output=destination_paramgen.go DestinationConfig
+
+type DestinationConfig struct {
+	Config
+	// MessageDelay represents the length of time, in seconds, for which a
+	// specific message is delayed
+	MessageDelay int32 `json:"aws.delayTime" default:"0"`
 }
