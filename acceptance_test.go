@@ -55,10 +55,14 @@ func TestAcceptance(t *testing.T) {
 				destinationConfig[common.ConfigAwsQueue] = queue.Name
 			},
 			Skip: []string{
+				// This test is not compatible with how sqs works. When trying to
+				// get the remaining records, the connector will first yield 5
+				// records, give an sdk.ErrBackoffRetry, and yield those 5 again due
+				// to the VisibilityTimeout.
 				"TestSource_Open_ResumeAtPositionSnapshot",
 			},
-			WriteTimeout: 5000 * time.Millisecond,
-			ReadTimeout:  5000 * time.Millisecond,
+			WriteTimeout: 3000 * time.Millisecond,
+			ReadTimeout:  3000 * time.Millisecond,
 		},
 	}
 

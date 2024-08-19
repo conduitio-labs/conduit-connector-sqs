@@ -115,7 +115,7 @@ func (s *Source) Read(ctx context.Context) (rec opencdc.Record, err error) {
 
 	// if there are no messages in queue, backoff
 	if len(sqsMessages.Messages) == 0 {
-		sdk.Logger(ctx).Error().Msg("got 0 messages from queue")
+		sdk.Logger(ctx).Warn().Msg("got 0 messages from queue")
 		return rec, sdk.ErrBackoffRetry
 	}
 
