@@ -31,7 +31,9 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	source := NewSource()
 	defer func() { is.NoErr(source.Teardown(ctx)) }()
 
-	testClient := testutils.NewSQSClient(ctx, is)
+	testClient, cleanTestClient := testutils.NewSQSClient(ctx, is)
+	defer cleanTestClient()
+
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
 	cfg := testutils.IntegrationConfig(testQueue.Name)
 
@@ -69,7 +71,9 @@ func TestSource_OpenWithPosition(t *testing.T) {
 	is := is.New(t)
 	ctx := testutils.TestContext(t)
 
-	testClient := testutils.NewSQSClient(ctx, is)
+	testClient, cleanTestClient := testutils.NewSQSClient(ctx, is)
+	defer cleanTestClient()
+
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
 	cfg := testutils.IntegrationConfig(testQueue.Name)
 	{

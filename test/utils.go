@@ -16,6 +16,7 @@ package testutils
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -30,9 +31,12 @@ func TestContext(t *testing.T) context.Context {
 	return logger.WithContext(context.Background())
 }
 
-func NewSQSClient(ctx context.Context, is *is.I) *sqs.Client {
+func NewSQSClient(ctx context.Context, is *is.I) (*sqs.Client, func()) {
 	is.Helper()
-	client, err := common.NewSQSClient(ctx, common.Config{
+
+	httpClient := &http.Client{}
+
+	client, err := common.NewSQSClient(ctx, httpClient, common.Config{
 		AWSAccessKeyID:     "accessskeymock",
 		AWSSecretAccessKey: "accessssecretmock",
 		AWSRegion:          "us-east-1",
@@ -40,7 +44,9 @@ func NewSQSClient(ctx context.Context, is *is.I) *sqs.Client {
 	})
 	is.NoErr(err)
 
-	return client
+	return client, func() {
+		httpClient.CloseIdleConnections()
+	}
 }
 
 type TestQueue struct {
@@ -52,16 +58,12 @@ type TestQueue struct {
 
 func CreateTestQueue(ctx context.Context, t *testing.T, is *is.I, client *sqs.Client) TestQueue {
 	is.Helper()
-	queueName := "test-queue-" + uuid.NewString()
+	queueName := "test-queue-" + uuid.NewString()[:8]
 
-	_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
-		QueueName: &queueName,
-	})
+	_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{QueueName: &queueName})
 	is.NoErr(err)
 
-	queueInput := &sqs.GetQueueUrlInput{
-		QueueName: &queueName,
-	}
+	queueInput := &sqs.GetQueueUrlInput{QueueName: &queueName}
 	urlResult, err := client.GetQueueUrl(ctx, queueInput)
 	is.NoErr(err)
 

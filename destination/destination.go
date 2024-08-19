@@ -16,7 +16,10 @@ package destination
 
 import (
 	"context"
+	"encoding/base64"
+	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -32,10 +35,16 @@ type Destination struct {
 	config   Config
 	svc      *sqs.Client
 	queueURL string
+
+	// httpClient allows us to cleanup left over http connections. Useful to not
+	// leak goroutines when tearing down the connector
+	httpClient *http.Client
 }
 
 func NewDestination() sdk.Destination {
-	return sdk.DestinationWithMiddleware(&Destination{}, sdk.DefaultDestinationMiddleware()...)
+	return sdk.DestinationWithMiddleware(&Destination{
+		httpClient: &http.Client{},
+	}, sdk.DefaultDestinationMiddleware()...)
 }
 
 func (d *Destination) Parameters() config.Parameters {
@@ -54,7 +63,8 @@ func (d *Destination) Configure(ctx context.Context, cfg config.Config) error {
 }
 
 func (d *Destination) Open(ctx context.Context) (err error) {
-	d.svc, err = common.NewSQSClient(ctx, d.config.Config)
+	d.svc, err = common.NewSQSClient(ctx, d.httpClient, d.config.Config)
+
 	if err != nil {
 		return fmt.Errorf("failed to create destination sqs client: %w", err)
 	}
@@ -71,8 +81,12 @@ func (d *Destination) Open(ctx context.Context) (err error) {
 
 	d.queueURL = *urlResult.QueueUrl
 
+	sdk.Logger(ctx).Info().Msgf("writing to queue %v", d.queueURL)
+
 	return nil
 }
+
+const GroupIDKey = "groupID"
 
 func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int, error) {
 	for i := 0; i < len(records); i += 10 {
@@ -82,9 +96,7 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 		}
 
 		recordsChunk := records[i:end]
-		sqsRecords := sqs.SendMessageBatchInput{
-			QueueUrl: &d.queueURL,
-		}
+		sqsRecords := sqs.SendMessageBatchInput{QueueUrl: &d.queueURL}
 
 		for _, record := range recordsChunk {
 			messageBody := string(record.Bytes())
@@ -96,9 +108,22 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 					StringValue: aws.String(value),
 				}
 			}
-			id := string(record.Key.Bytes())
-			// construct record to send to destination
+
+			// sqs has restrictions on what kind of characters are allowed as a batch record id.
+			// As the id in this case is only relevant for the records of the batch itself, we can
+			// just base64 encode the key and adapt to this limitation.
+			id := base64.RawURLEncoding.EncodeToString(record.Key.Bytes())
+			if len(id) > 80 {
+				id = id[:80]
+			}
+
+			var messageGroupID *string
+			if groupID, ok := record.Metadata[GroupIDKey]; ok {
+				messageGroupID = &groupID
+			}
+
 			sqsRecords.Entries = append(sqsRecords.Entries, types.SendMessageBatchRequestEntry{
+				MessageGroupId:    messageGroupID,
 				MessageAttributes: messageAttributes,
 				MessageBody:       &messageBody,
 				DelaySeconds:      d.config.AWSSQSMessageDelay,
@@ -106,15 +131,28 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 			})
 		}
 
-		_, err := d.svc.SendMessageBatch(ctx, &sqsRecords)
+		sendMessageOutput, err := d.svc.SendMessageBatch(ctx, &sqsRecords)
 		if err != nil {
-			return 0, fmt.Errorf("failed to write sqs message : %w", err)
+			return 0, fmt.Errorf("failed to write sqs message: %w", err)
 		}
+
+		if len(sendMessageOutput.Failed) != 0 {
+			var errs []error
+			for _, failed := range sendMessageOutput.Failed {
+				err := fmt.Errorf("failed to deliver message (%s): %s", *failed.Id, *failed.Message)
+				errs = append(errs, err)
+			}
+
+			return 0, errors.Join(errs...)
+		}
+
+		sdk.Logger(ctx).Trace().Msgf("wrote %v records", len(recordsChunk))
 	}
 
 	return len(records), nil
 }
 
 func (d *Destination) Teardown(_ context.Context) error {
-	return nil // nothing to do
+	d.httpClient.CloseIdleConnections()
+	return nil
 }
