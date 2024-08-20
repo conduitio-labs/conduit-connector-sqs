@@ -19,10 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/conduitio-labs/conduit-connector-sqs/destination"
-	"github.com/conduitio-labs/conduit-connector-sqs/source"
+	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
-	"github.com/conduitio/conduit-commons/config"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/matryer/is"
@@ -33,8 +31,8 @@ func TestAcceptance(t *testing.T) {
 	is := is.New(t)
 
 	ctx := testutils.TestContext(t)
-	srcCfg := TestSourceConfig("")
-	destCfg := TestDestinationConfig("")
+	srcCfg := testutils.SourceConfig("")
+	destCfg := testutils.DestinationConfig("")
 
 	driver := sdk.ConfigurableAcceptanceTestDriver{
 		Config: sdk.ConfigurableAcceptanceTestDriverConfig{
@@ -51,8 +49,8 @@ func TestAcceptance(t *testing.T) {
 				defer closeTestClient()
 
 				queue := testutils.CreateTestQueue(ctx, t, is, testClient)
-				srcCfg[source.ConfigAwsQueue] = queue.Name
-				destCfg[destination.ConfigAwsQueue] = queue.Name
+				srcCfg[common.SourceConfigAwsQueue] = queue.Name
+				destCfg[common.DestinationConfigAwsQueue] = queue.Name
 			},
 			Skip: []string{
 				// This test is not compatible with how sqs works. When trying to
@@ -86,26 +84,4 @@ func (d testDriver) GenerateRecord(t *testing.T, op opencdc.Operation) opencdc.R
 	}
 
 	return rec
-}
-
-func TestDestinationConfig(queueName string) config.Config {
-	return config.Config{
-		destination.ConfigAwsAccessKeyId:     "accessskeymock",
-		destination.ConfigAwsSecretAccessKey: "accessssecretmock",
-		destination.ConfigAwsRegion:          "us-east-1",
-		destination.ConfigAwsUrl:             "http://localhost:4566",
-		destination.ConfigAwsQueue:           queueName,
-	}
-}
-
-func TestSourceConfig(queueName string) config.Config {
-	return config.Config{
-		source.ConfigAwsAccessKeyId:       "accessskeymock",
-		source.ConfigAwsSecretAccessKey:   "accessssecretmock",
-		source.ConfigAwsRegion:            "us-east-1",
-		source.ConfigAwsUrl:               "http://localhost:4566",
-		source.ConfigAwsQueue:             queueName,
-		source.ConfigAwsVisibilityTimeout: "1",
-		source.ConfigAwsWaitTimeSeconds:   "0",
-	}
 }

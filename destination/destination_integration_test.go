@@ -23,21 +23,10 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
-	"github.com/conduitio/conduit-commons/config"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/matryer/is"
 )
-
-func TestConfig(queueName string) config.Config {
-	return config.Config{
-		ConfigAwsAccessKeyId:     "accessskeymock",
-		ConfigAwsSecretAccessKey: "accessssecretmock",
-		ConfigAwsRegion:          "us-east-1",
-		ConfigAwsUrl:             "http://localhost:4566",
-		ConfigAwsQueue:           queueName,
-	}
-}
 
 type ResultConfig struct {
 	Payload   Data   `json:"payload"`
@@ -72,7 +61,7 @@ func TestDestination_SuccessfulMessageSend(t *testing.T) {
 	defer closeTestClient()
 
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := TestConfig(testQueue.Name)
+	cfg := testutils.DestinationConfig(testQueue.Name)
 
 	err := destination.Configure(ctx, cfg)
 	is.NoErr(err)
@@ -113,7 +102,7 @@ func TestDestination_FailBadRecord(t *testing.T) {
 	defer closeTestClient()
 
 	queueName := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := TestConfig(queueName.Name)
+	cfg := testutils.DestinationConfig(queueName.Name)
 
 	metadata := opencdc.Metadata{}
 	destination := NewDestination()
@@ -144,7 +133,7 @@ func TestDestination_FailNonExistentQueue(t *testing.T) {
 	destination := NewDestination()
 	defer func() { is.NoErr(destination.Teardown(ctx)) }()
 
-	cfg := TestConfig("nonexistent-testqueue")
+	cfg := testutils.DestinationConfig("nonexistent-testqueue")
 
 	err := destination.Configure(ctx, cfg)
 	is.NoErr(err)

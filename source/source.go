@@ -29,7 +29,7 @@ import (
 
 type Source struct {
 	sdk.UnimplementedSource
-	config   Config
+	config   common.SourceConfig
 	svc      *sqs.Client
 	queueURL string
 
@@ -45,7 +45,7 @@ func NewSource() sdk.Source {
 }
 
 func (s *Source) Parameters() config.Parameters {
-	return Config{}.Parameters()
+	return common.SourceConfig{}.Parameters()
 }
 
 func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
