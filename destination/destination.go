@@ -86,7 +86,10 @@ func (d *Destination) Open(ctx context.Context) (err error) {
 	return nil
 }
 
-const GroupIDKey = "groupID"
+const (
+	GroupIDKey = "groupID"
+	DedupIDKey = "deduplicationID"
+)
 
 func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int, error) {
 	for i := 0; i < len(records); i += 10 {
@@ -122,12 +125,18 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 				messageGroupID = &groupID
 			}
 
+			var messageDeduplicationID *string
+			if dedupID, ok := record.Metadata[DedupIDKey]; ok {
+				messageGroupID = &dedupID
+			}
+
 			sqsRecords.Entries = append(sqsRecords.Entries, types.SendMessageBatchRequestEntry{
-				MessageGroupId:    messageGroupID,
-				MessageAttributes: messageAttributes,
-				MessageBody:       &messageBody,
-				DelaySeconds:      d.config.MessageDelay,
-				Id:                &id,
+				MessageGroupId:         messageGroupID,
+				MessageDeduplicationId: messageDeduplicationID,
+				MessageAttributes:      messageAttributes,
+				MessageBody:            &messageBody,
+				DelaySeconds:           d.config.MessageDelay,
+				Id:                     &id,
 			})
 		}
 

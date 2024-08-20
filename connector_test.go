@@ -52,11 +52,12 @@ func TestFifoQueues(t *testing.T) {
 	defer func() { is.NoErr(dest.Teardown(ctx)) }()
 
 	var recs []opencdc.Record
-	for i := 0; i < 10; i++ {
+	for i := 1; i <= 10; i++ {
 		rec := sdk.Util.Source.NewRecordCreate(
 			opencdc.Position(nil), // doesn't matter
 			opencdc.Metadata{
 				destination.GroupIDKey: "test-group-id",
+				destination.DedupIDKey: fmt.Sprint("dedup-key-", i),
 			},
 			opencdc.RawData(fmt.Sprint("key-", i)),
 			opencdc.RawData(fmt.Sprint("val-", i)),
@@ -68,7 +69,7 @@ func TestFifoQueues(t *testing.T) {
 	_, err := dest.Write(ctx, recs)
 	is.NoErr(err)
 
-	for i := 0; i < len(recs); i++ {
+	for i := 1; i <= 10; i++ {
 		rec, err := src.Read(ctx)
 		is.NoErr(err)
 
@@ -78,6 +79,8 @@ func TestFifoQueues(t *testing.T) {
 		actual := string(parsed.Payload.After.Bytes())
 		expected := fmt.Sprint("val-", i)
 		is.Equal(actual, expected)
+		is.Equal(parsed.Metadata[destination.GroupIDKey], "test-group-id")
+		is.Equal(parsed.Metadata[destination.DedupIDKey], fmt.Sprint("dedup-key-", i))
 
 		is.NoErr(src.Ack(ctx, rec.Position))
 	}

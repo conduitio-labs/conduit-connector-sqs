@@ -42,5 +42,9 @@ The configuration passed to `Configure` can contain the following fields:
 
 ## How to use FIFO queues with the connector
 
-A special record metadata key, `groupID`, needs to be set to each record in order to write to a FIFO sqs queue. It represents the [Amazon SQS message group ID](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagegroupid-property.html).
-There's no special requirement / parameter to read from a FIFO queue.
+Two special metadata keys can be provided to the record to customize how messages are written to FIFO queues.
+
+- `groupID`: It represents the [Amazon SQS message group ID](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagegroupid-property.html).
+- `deduplicationID`: Use this to enforce [SQS exactly-once processing](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/FIFO-queues-exactly-once-processing.html)
+
+There are no special requirements / parameters needed to read from a FIFO queue.
