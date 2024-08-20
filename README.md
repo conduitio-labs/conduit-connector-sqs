@@ -39,3 +39,8 @@ The configuration passed to `Configure` can contain the following fields:
 | `aws.queue`             | AWS SQS Queue Name                 | yes      | "QUEUE_NAME"        |
 | `aws.visibilityTimeout` | AWS SQS Message Visibility Timeout | yes      | "5"                 |
 | `aws.url`               | URL for AWS (internal use only)    | no       |                     |
+
+## How to use FIFO queues with the connector
+
+A special record metadata key, `groupID`, needs to be set to each record in order to write to a FIFO sqs queue. It represents the [Amazon SQS message group ID](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/using-messagegroupid-property.html).
+There's no special requirement / parameter to read from a FIFO queue.
