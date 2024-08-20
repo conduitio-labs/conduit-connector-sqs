@@ -21,7 +21,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
-	"github.com/conduitio/conduit-commons/config"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 	"github.com/rs/zerolog"
@@ -108,27 +107,5 @@ func CreateTestFifoQueue(ctx context.Context, t *testing.T, is *is.I, client *sq
 	return TestQueue{
 		Name: queueName,
 		URL:  urlResult.QueueUrl,
-	}
-}
-
-func SourceConfig(queueName string) config.Config {
-	return config.Config{
-		common.SourceConfigAwsAccessKeyId:       "accessskeymock",
-		common.SourceConfigAwsSecretAccessKey:   "accessssecretmock",
-		common.SourceConfigAwsRegion:            "us-east-1",
-		common.SourceConfigAwsUrl:               "http://localhost:4566",
-		common.SourceConfigAwsQueue:             queueName,
-		common.SourceConfigAwsVisibilityTimeout: "1",
-		common.SourceConfigAwsWaitTimeSeconds:   "0",
-	}
-}
-
-func DestinationConfig(queueName string) config.Config {
-	return config.Config{
-		common.DestinationConfigAwsAccessKeyId:     "accessskeymock",
-		common.DestinationConfigAwsSecretAccessKey: "accessssecretmock",
-		common.DestinationConfigAwsRegion:          "us-east-1",
-		common.DestinationConfigAwsUrl:             "http://localhost:4566",
-		common.DestinationConfigAwsQueue:           queueName,
 	}
 }

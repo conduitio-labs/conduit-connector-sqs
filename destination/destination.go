@@ -32,7 +32,7 @@ import (
 
 type Destination struct {
 	sdk.UnimplementedDestination
-	config   common.DestinationConfig
+	config   Config
 	svc      *sqs.Client
 	queueURL string
 
@@ -48,7 +48,7 @@ func NewDestination() sdk.Destination {
 }
 
 func (d *Destination) Parameters() config.Parameters {
-	return common.DestinationConfig{}.Parameters()
+	return Config{}.Parameters()
 }
 
 func (d *Destination) Configure(ctx context.Context, cfg config.Config) error {

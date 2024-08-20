@@ -12,17 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package destination
+
+import "github.com/conduitio-labs/conduit-connector-sqs/common"
+
+//go:generate paramgen -output=destination_paramgen.go Config
 
 type Config struct {
-	// AWSAccessKeyID is the amazon access key id
-	AWSAccessKeyID string `json:"aws.accessKeyId" validate:"required"`
-	// AWSSecretAccessKey is the amazon secret access key
-	AWSSecretAccessKey string `json:"aws.secretAccessKey" validate:"required"`
-	// AWSRegion is the amazon sqs region
-	AWSRegion string `json:"aws.region" validate:"required"`
-	// AWSQueue is the sqs queue name
-	AWSQueue string `json:"aws.queue" validate:"required"`
-	// AWSURL is the URL for AWS (internal use only).
-	AWSURL string `json:"aws.url"`
+	common.Config
+	// MessageDelay represents the length of time, in seconds, for which a
+	// specific message is delayed
+	MessageDelay int32 `json:"aws.delayTime" default:"0"`
 }

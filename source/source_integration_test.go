@@ -21,9 +21,22 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
+	"github.com/conduitio/conduit-commons/config"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/matryer/is"
 )
+
+func TestConfig(queueName string) config.Config {
+	return config.Config{
+		ConfigAwsAccessKeyId:       "accessskeymock",
+		ConfigAwsSecretAccessKey:   "accessssecretmock",
+		ConfigAwsRegion:            "us-east-1",
+		ConfigAwsUrl:               "http://localhost:4566",
+		ConfigAwsQueue:             queueName,
+		ConfigAwsVisibilityTimeout: "1",
+		ConfigAwsWaitTimeSeconds:   "0",
+	}
+}
 
 func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	is := is.New(t)
@@ -35,7 +48,7 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	defer cleanTestClient()
 
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.SourceConfig(testQueue.Name)
+	cfg := TestConfig(testQueue.Name)
 
 	messageBody := "Test message body"
 	_, err := testClient.SendMessage(
@@ -75,7 +88,7 @@ func TestSource_OpenWithPosition(t *testing.T) {
 	defer cleanTestClient()
 
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.SourceConfig(testQueue.Name)
+	cfg := TestConfig(testQueue.Name)
 	{
 		source := NewSource()
 		is.NoErr(source.Configure(ctx, cfg))
