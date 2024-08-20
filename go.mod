@@ -15,6 +15,7 @@ require (
 	github.com/golangci/golangci-lint v1.60.3
 	github.com/google/uuid v1.6.0
 	github.com/matryer/is v1.4.1
+	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/rs/zerolog v1.33.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.4.0
