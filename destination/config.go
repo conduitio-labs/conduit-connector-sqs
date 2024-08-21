@@ -21,6 +21,9 @@ import "github.com/conduitio-labs/conduit-connector-sqs/common"
 type Config struct {
 	common.Config
 
+	// AWSQueue is the sqs queue name
+	AWSQueue string `json:"aws.queue" validate:"required"`
+
 	// MessageDelay represents the length of time, in seconds, for which a
 	// specific message is delayed
 	MessageDelay int32 `json:"aws.delayTime" default:"0"`

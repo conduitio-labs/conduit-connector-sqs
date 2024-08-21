@@ -28,12 +28,10 @@ func (Config) Parameters() map[string]config.Parameter {
 			},
 		},
 		ConfigAwsQueue: {
-			Default:     "",
+			Default:     "{{ index .Metadata \"opencdc.collection\" }}",
 			Description: "AWSQueue is the sqs queue name",
 			Type:        config.ParameterTypeString,
-			Validations: []config.Validation{
-				config.ValidationRequired{},
-			},
+			Validations: []config.Validation{},
 		},
 		ConfigAwsRegion: {
 			Default:     "",

@@ -14,6 +14,8 @@ The source connector pulls data from the Amazon SQS Queue. As messages come in, 
 
 The destination connector batches incoming records into 10 and pushes them to the Amazon SQS Queue. Any fields defined in the metadata of the record will be passed as Message Attributes, and the json encoding of the record will be passed as the Message Body.
 
+It supports multicollection mode, where the sqs queue name is determined at runtime, based on the `opencdc.collection` metadata field or a given go template. If no queue name is found, the record will be written to the specified `aws.queue` parameter.
+
 ### Configuration
 
 The configuration passed to `Configure` can contain the following fields:
@@ -31,14 +33,14 @@ The configuration passed to `Configure` can contain the following fields:
 
 #### Destination
 
-| name                    | description                        | required | example             |
-| ----------------------- | ---------------------------------- | -------- | ------------------- |
-| `aws.accessKeyId`       | AWS Access Key ID                  | yes      | "THE_ACCESS_KEY_ID" |
-| `aws.secretAccessKey`   | AWS Secret Access Key              | yes      | "SECRET_ACCESS_KEY" |
-| `aws.region`            | AWS SQS Region                     | yes      | "us-east-1"         |
-| `aws.queue`             | AWS SQS Queue Name                 | yes      | "QUEUE_NAME"        |
-| `aws.visibilityTimeout` | AWS SQS Message Visibility Timeout | yes      | "5"                 |
-| `aws.url`               | URL for AWS (internal use only)    | no       |                     |
+| name                    | description                                                                                                                                                                                                                                       | required | example                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------- |
+| `aws.accessKeyId`       | AWS Access Key ID                                                                                                                                                                                                                                 | yes      | "THE_ACCESS_KEY_ID"                          |
+| `aws.secretAccessKey`   | AWS Secret Access Key                                                                                                                                                                                                                             | yes      | "SECRET_ACCESS_KEY"                          |
+| `aws.region`            | AWS SQS Region                                                                                                                                                                                                                                    | yes      | "us-east-1"                                  |
+| `aws.queue`             | AWS SQS Queue Name. It can contain a [Go template](https://pkg.go.dev/text/template) that will be executed for each record to determine the queue name. By default, the queue name will come from the `opencdc.collection` record metadata field. | yes      | `{{ index .Metadata "opencdc.collection" }}` |
+| `aws.visibilityTimeout` | AWS SQS Message Visibility Timeout                                                                                                                                                                                                                | yes      | "5"                                          |
+| `aws.url`               | URL for AWS (internal use only)                                                                                                                                                                                                                   | no       |                                              |
 
 ## How to use FIFO queues with the connector
 

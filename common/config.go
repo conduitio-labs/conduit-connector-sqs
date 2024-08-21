@@ -21,8 +21,6 @@ type Config struct {
 	AWSSecretAccessKey string `json:"aws.secretAccessKey" validate:"required"`
 	// AWSRegion is the amazon sqs region
 	AWSRegion string `json:"aws.region" validate:"required"`
-	// AWSQueue is the sqs queue name
-	AWSQueue string `json:"aws.queue" validate:"required"`
 	// AWSURL is the URL for AWS (internal use only).
 	AWSURL string `json:"aws.url"`
 }
