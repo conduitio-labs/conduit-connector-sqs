@@ -35,7 +35,7 @@ type Destination struct {
 	sdk.UnimplementedDestination
 	config      Config
 	svc         *sqs.Client
-	queueUrlMap *queueUrlMap
+	queueURLMap *queueURLMap
 
 	// httpClient allows us to cleanup left over http connections. Useful to not
 	// leak goroutines when tearing down the connector
@@ -83,7 +83,7 @@ func (d *Destination) Open(ctx context.Context) (err error) {
 
 	sdk.Logger(ctx).Info().Msgf("writing to queue %v", queueURL)
 
-	d.queueUrlMap = newQueueUrlMap(d.svc, d.config.AWSQueue, queueURL)
+	d.queueURLMap = newQueueURLMap(d.svc, d.config.AWSQueue, queueURL)
 
 	return nil
 }
@@ -104,34 +104,34 @@ func (d *Destination) Teardown(_ context.Context) error {
 	return nil
 }
 
-type queueUrlMap struct {
+type queueURLMap struct {
 	client *sqs.Client
 	cache  cmap.ConcurrentMap[string, string]
 }
 
-func newQueueUrlMap(client *sqs.Client, initialQueueName, initialQueueUrl string) *queueUrlMap {
+func newQueueURLMap(client *sqs.Client, initialQueueName, initialQueueURL string) *queueURLMap {
 	cache := cmap.New[string]()
-	cache.Set(initialQueueName, initialQueueUrl)
+	cache.Set(initialQueueName, initialQueueURL)
 
-	return &queueUrlMap{
+	return &queueURLMap{
 		client: client,
 		cache:  cache,
 	}
 }
 
-func (m *queueUrlMap) getUrlForQueue(ctx context.Context, queueName string) (string, error) {
+func (m *queueURLMap) getURLForQueue(ctx context.Context, queueName string) (string, error) {
 	if url, ok := m.cache.Get(queueName); ok {
 		return url, nil
 	}
 
-	queueUrlOutput, err := m.client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
+	queueURLOutput, err := m.client.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
 		QueueName: aws.String(queueName),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch queue url to cache: %w", err)
 	}
 
-	url := *queueUrlOutput.QueueUrl
+	url := *queueURLOutput.QueueUrl
 
 	m.cache.Set(queueName, url)
 
@@ -184,7 +184,7 @@ func (d *Destination) writeBatches(ctx context.Context, batches []messageBatch) 
 
 			recordsChunk := records[i:end]
 
-			queueURL, err := d.queueUrlMap.getUrlForQueue(ctx, batch.queueName)
+			queueURL, err := d.queueURLMap.getURLForQueue(ctx, batch.queueName)
 			if err != nil {
 				return 0, fmt.Errorf("failed to get queue url while writing batch: %w", err)
 			}
