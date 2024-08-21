@@ -113,22 +113,22 @@ func CreateTestFifoQueue(ctx context.Context, t *testing.T, is *is.I, client *sq
 
 func SourceConfig(queueName string) config.Config {
 	return config.Config{
-		common.SourceConfigAwsAccessKeyId:       "accessskeymock",
-		common.SourceConfigAwsSecretAccessKey:   "accessssecretmock",
-		common.SourceConfigAwsRegion:            "us-east-1",
-		common.SourceConfigAwsUrl:               "http://localhost:4566",
-		common.SourceConfigAwsQueue:             queueName,
-		common.SourceConfigAwsVisibilityTimeout: "1",
-		common.SourceConfigAwsWaitTimeSeconds:   "0",
+		"aws.accessKeyId":       "accessskeymock",
+		"aws.secretAccessKey":   "accessssecretmock",
+		"aws.region":            "us-east-1",
+		"aws.url":               "http://localhost:4566",
+		"aws.queue":             queueName,
+		"aws.visibilityTimeout": "1",
+		"aws.waitTimeSeconds":   "0",
 	}
 }
 
 func DestinationConfig(queueName string) config.Config {
 	return config.Config{
-		common.DestinationConfigAwsAccessKeyId:     "accessskeymock",
-		common.DestinationConfigAwsSecretAccessKey: "accessssecretmock",
-		common.DestinationConfigAwsRegion:          "us-east-1",
-		common.DestinationConfigAwsUrl:             "http://localhost:4566",
-		common.DestinationConfigAwsQueue:           queueName,
+		"aws.accessKeyId":     "accessskeymock",
+		"aws.secretAccessKey": "accessssecretmock",
+		"aws.region":          "us-east-1",
+		"aws.url":             "http://localhost:4566",
+		"aws.queue":           queueName,
 	}
 }
