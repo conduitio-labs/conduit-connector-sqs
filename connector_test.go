@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	"github.com/conduitio-labs/conduit-connector-sqs/destination"
 	"github.com/conduitio-labs/conduit-connector-sqs/source"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
@@ -37,8 +36,8 @@ func TestFifoQueues(t *testing.T) {
 
 	testQueue := testutils.CreateTestFifoQueue(ctx, t, is, testClient)
 	srcCfg := testutils.SourceConfig(testQueue.Name)
-	srcCfg[common.SourceConfigAwsVisibilityTimeout] = "1"
-	srcCfg[common.SourceConfigAwsWaitTimeSeconds] = "2"
+	srcCfg[source.ConfigAwsVisibilityTimeout] = "1"
+	srcCfg[source.ConfigAwsWaitTimeSeconds] = "2"
 	destCfg := testutils.DestinationConfig(testQueue.Name)
 
 	src := source.NewSource()
