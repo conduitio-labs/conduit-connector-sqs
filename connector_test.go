@@ -94,7 +94,7 @@ func TestFifoQueues(t *testing.T) {
 	is.Equal(err, sdk.ErrBackoffRetry)
 }
 
-func TestMulticollection(t *testing.T) {
+func TestMulticollection_MultipleQueues(t *testing.T) {
 	is := is.New(t)
 	ctx := testutils.TestContext(t)
 
@@ -168,6 +168,87 @@ func TestMulticollection(t *testing.T) {
 		{
 			QueueName:       defaultQueue.Name,
 			ExpectedRecords: recs[5:6],
+		},
+	} {
+		source := source.NewSource()
+		cfg := testutils.SourceConfig(testCase.QueueName)
+
+		is.NoErr(source.Configure(ctx, cfg))
+		is.NoErr(source.Open(ctx, nil))
+
+		for _, expectedRec := range testCase.ExpectedRecords {
+			rec, err := source.Read(ctx)
+			is.NoErr(err)
+
+			var actualRec opencdc.Record
+			is.NoErr(json.Unmarshal(rec.Payload.After.Bytes(), &actualRec))
+
+			is.Equal(cmp.Diff(expectedRec, actualRec, cmpopts.IgnoreUnexported(
+				expectedRec, actualRec,
+			)), "")
+
+			is.NoErr(source.Ack(ctx, rec.Position))
+		}
+
+		is.NoErr(source.Teardown(ctx))
+	}
+}
+
+func TestMulticollection_QueueNameAsTemplate(t *testing.T) {
+	is := is.New(t)
+	ctx := testutils.TestContext(t)
+
+	testClient, closeTestClient := testutils.NewSQSClient(ctx, is)
+	defer closeTestClient()
+
+	testQueue1 := testutils.CreateTestQueue(ctx, t, is, testClient)
+	testQueue2 := testutils.CreateTestQueue(ctx, t, is, testClient)
+
+	template := `{{ index .Metadata "sqsQueueName" }}`
+
+	destination, cleanDestination := testutils.StartDestination(
+		ctx, is, destination.NewDestination(),
+		template,
+	)
+	defer cleanDestination()
+
+	genRecord := func(queueName string) opencdc.Record {
+		rec := opencdc.Record{
+			Position:  nil,
+			Operation: opencdc.OperationCreate,
+			Key:       opencdc.RawData(uuid.NewString()),
+			Payload: opencdc.Change{
+				Before: opencdc.StructuredData(nil),
+				After:  opencdc.StructuredData(nil),
+			},
+		}
+
+		rec.Metadata = opencdc.Metadata{
+			"sqsQueueName": queueName,
+		}
+		return rec
+	}
+
+	recs := []opencdc.Record{
+		genRecord(testQueue1.Name),
+		genRecord(testQueue2.Name),
+	}
+
+	written, err := destination.Write(ctx, recs)
+	is.NoErr(err)
+	is.Equal(written, 2)
+
+	for _, testCase := range []struct {
+		QueueName       string
+		ExpectedRecords []opencdc.Record
+	}{
+		{
+			QueueName:       testQueue1.Name,
+			ExpectedRecords: recs[:1],
+		},
+		{
+			QueueName:       testQueue2.Name,
+			ExpectedRecords: recs[1:],
 		},
 	} {
 		source := source.NewSource()

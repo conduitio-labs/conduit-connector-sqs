@@ -149,7 +149,7 @@ func StartDestination(
 	d sdk.Destination,
 	queueName string,
 ) (sdk.Destination, func()) {
-	is.NoErr(d.Configure(ctx, SourceConfig(queueName)))
+	is.NoErr(d.Configure(ctx, DestinationConfig(queueName)))
 	is.NoErr(d.Open(ctx))
 
 	return d, func() {
