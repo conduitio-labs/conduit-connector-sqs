@@ -38,20 +38,12 @@ func TestFifoQueues(t *testing.T) {
 	defer cleanTestClient()
 
 	testQueue := testutils.CreateTestFifoQueue(ctx, t, is, testClient)
-	srcCfg := testutils.SourceConfig(testQueue.Name)
-	srcCfg[source.ConfigAwsVisibilityTimeout] = "1"
-	srcCfg[source.ConfigAwsWaitTimeSeconds] = "2"
-	destCfg := testutils.DestinationConfig(testQueue.Name)
 
-	src := source.NewSource()
-	is.NoErr(src.Configure(ctx, srcCfg))
-	is.NoErr(src.Open(ctx, nil))
-	defer func() { is.NoErr(src.Teardown(ctx)) }()
+	src, cleanSrc := testutils.StartSource(ctx, is, source.NewSource(), testQueue.Name)
+	defer cleanSrc()
 
-	dest := destination.NewDestination()
-	is.NoErr(dest.Configure(ctx, destCfg))
-	is.NoErr(dest.Open(ctx))
-	defer func() { is.NoErr(dest.Teardown(ctx)) }()
+	dest, cleanDest := testutils.StartDestination(ctx, is, destination.NewDestination(), testQueue.Name)
+	defer cleanDest()
 
 	var recs []opencdc.Record
 	for i := 1; i <= 10; i++ {
@@ -115,14 +107,11 @@ func TestMulticollection(t *testing.T) {
 	testQueue1 := testutils.CreateTestQueue(ctx, t, is, testClient)
 	testQueue2 := testutils.CreateTestQueue(ctx, t, is, testClient)
 
-	destination := destination.NewDestination()
-	defer func() { is.NoErr(destination.Teardown(ctx)) }()
-
-	cfg := testutils.DestinationConfig(defaultQueue.Name)
-
-	is.NoErr(destination.Configure(ctx, cfg))
-	is.NoErr(destination.Open(ctx))
-	defer func() { is.NoErr(destination.Teardown(ctx)) }()
+	destination, cleanDestination := testutils.StartDestination(
+		ctx, is, destination.NewDestination(),
+		defaultQueue.Name,
+	)
+	defer cleanDestination()
 
 	genRecord := func(queueName string) opencdc.Record {
 		rec := opencdc.Record{

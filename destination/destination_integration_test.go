@@ -15,84 +15,14 @@
 package destination
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/matryer/is"
 )
-
-type ResultConfig struct {
-	Payload   Data   `json:"payload"`
-	MetaData  string `json:"meta_data"`
-	Position  string `json:"position"`
-	Key       string `json:"key"`
-	Operation string `json:"operation"`
-}
-
-type Data struct {
-	Before string `json:"before"`
-	After  string `json:"after"`
-}
-
-func TestDestination_SuccessfulMessageSend(t *testing.T) {
-	is := is.New(t)
-	ctx := testutils.TestContext(t)
-
-	metadata := opencdc.Metadata{}
-	destination := NewDestination()
-	defer func() { is.NoErr(destination.Teardown(ctx)) }()
-
-	messageBody := "Test message body"
-	record := sdk.Util.Source.NewRecordCreate(
-		opencdc.Position("111111"),
-		metadata,
-		opencdc.RawData("1111111"),
-		opencdc.RawData(messageBody),
-	)
-
-	testClient, closeTestClient := testutils.NewSQSClient(ctx, is)
-	defer closeTestClient()
-
-	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.DestinationConfig(testQueue.Name)
-
-	err := destination.Configure(ctx, cfg)
-	is.NoErr(err)
-
-	err = destination.Open(ctx)
-	is.NoErr(err)
-
-	ret, err := destination.Write(ctx, []opencdc.Record{record})
-	is.NoErr(err)
-
-	is.Equal(ret, 1)
-	time.Sleep(time.Second)
-
-	message, err := testClient.ReceiveMessage(
-		ctx,
-		&sqs.ReceiveMessageInput{
-			QueueUrl: testQueue.URL,
-		},
-	)
-
-	is.NoErr(err)
-	is.Equal(len(message.Messages), 1)
-
-	var result ResultConfig
-	err = json.Unmarshal([]byte(*message.Messages[0].Body), &result)
-	is.NoErr(err)
-	bodyDecoded, err := base64.StdEncoding.DecodeString(result.Payload.After)
-
-	is.NoErr(err)
-	is.Equal(string(bodyDecoded), messageBody)
-}
 
 func TestDestination_FailBadRecord(t *testing.T) {
 	is := is.New(t)
