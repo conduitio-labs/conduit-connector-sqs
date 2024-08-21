@@ -24,6 +24,9 @@ import (
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/uuid"
 	"github.com/matryer/is"
 )
 
@@ -97,4 +100,107 @@ func TestFifoQueues(t *testing.T) {
 
 	_, err = src.Read(ctx)
 	is.Equal(err, sdk.ErrBackoffRetry)
+}
+
+func TestMulticollection(t *testing.T) {
+	is := is.New(t)
+	ctx := testutils.TestContext(t)
+
+	testClient, closeTestClient := testutils.NewSQSClient(ctx, is)
+	defer closeTestClient()
+
+	// Records will be written here if no collection found.
+	defaultQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
+
+	testQueue1 := testutils.CreateTestQueue(ctx, t, is, testClient)
+	testQueue2 := testutils.CreateTestQueue(ctx, t, is, testClient)
+
+	destination := destination.NewDestination()
+	defer func() { is.NoErr(destination.Teardown(ctx)) }()
+
+	cfg := testutils.DestinationConfig(defaultQueue.Name)
+
+	is.NoErr(destination.Configure(ctx, cfg))
+	is.NoErr(destination.Open(ctx))
+	defer func() { is.NoErr(destination.Teardown(ctx)) }()
+
+	genRecord := func(queueName string) opencdc.Record {
+		rec := opencdc.Record{
+			Position:  nil,
+			Operation: opencdc.OperationCreate,
+			Key:       opencdc.RawData(uuid.NewString()),
+			Payload: opencdc.Change{
+				Before: opencdc.StructuredData(nil),
+				After:  opencdc.StructuredData(nil),
+			},
+		}
+
+		if queueName != defaultQueue.Name {
+			rec.Metadata = opencdc.Metadata{}
+			rec.Metadata.SetCollection(queueName)
+			return rec
+		}
+
+		return rec
+	}
+
+	recs := []opencdc.Record{
+		genRecord(defaultQueue.Name),
+		genRecord(defaultQueue.Name),
+
+		genRecord(testQueue1.Name),
+		genRecord(testQueue1.Name),
+
+		genRecord(testQueue2.Name),
+
+		genRecord(defaultQueue.Name),
+	}
+
+	written, err := destination.Write(ctx, recs)
+	is.NoErr(err)
+	is.Equal(written, len(recs))
+
+	for _, testCase := range []struct {
+		QueueName       string
+		ExpectedRecords []opencdc.Record
+	}{
+		{
+			QueueName:       defaultQueue.Name,
+			ExpectedRecords: recs[:2],
+		},
+		{
+			QueueName:       testQueue1.Name,
+			ExpectedRecords: recs[2:4],
+		},
+		{
+			QueueName:       testQueue2.Name,
+			ExpectedRecords: recs[4:5],
+		},
+		{
+			QueueName:       defaultQueue.Name,
+			ExpectedRecords: recs[5:6],
+		},
+	} {
+		source := source.NewSource()
+		cfg := testutils.SourceConfig(testCase.QueueName)
+
+		is.NoErr(source.Configure(ctx, cfg))
+		is.NoErr(source.Open(ctx, nil))
+
+		for _, expectedRec := range testCase.ExpectedRecords {
+			rec, err := source.Read(ctx)
+			is.NoErr(err)
+
+			var actualRec opencdc.Record
+			is.NoErr(json.Unmarshal(rec.Payload.After.Bytes(), &actualRec))
+
+			is.Equal(cmp.Diff(expectedRec, actualRec, cmpopts.IgnoreUnexported(
+				expectedRec, actualRec,
+			)), "")
+
+			is.NoErr(source.Ack(ctx, rec.Position))
+		}
+
+		is.NoErr(source.Teardown(ctx))
+	}
 }

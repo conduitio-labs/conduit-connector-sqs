@@ -140,36 +140,31 @@ func (m *queueUrlMap) getUrlForQueue(ctx context.Context, queueName string) (str
 
 type messageBatch struct {
 	queueName string
-	recs      []opencdc.Record
+	records   []opencdc.Record
 }
 
 func splitIntoBatches(recs []opencdc.Record, defaultQueueName string) []messageBatch {
-	var current messageBatch
 	var batches []messageBatch
 	for _, rec := range recs {
-		collection, err := rec.Metadata.GetCollection()
+		queueName, err := rec.Metadata.GetCollection()
 		if err != nil {
-			// collection empty, defaulting to the configured queue name
+			queueName = defaultQueueName
+		}
 
-			if current.queueName == defaultQueueName {
-				current.recs = append(current.recs, rec)
-			} else {
-				current = messageBatch{}
-				batches = append(batches, messageBatch{
-					queueName: defaultQueueName,
-					recs:      []opencdc.Record{rec},
-				})
-			}
+		if len(batches) == 0 {
+			batches = append(batches, messageBatch{
+				queueName: queueName,
+				records:   []opencdc.Record{rec},
+			})
 			continue
 		}
 
-		if current.queueName == collection {
-			current.recs = append(current.recs, rec)
+		if batchRef := &batches[len(batches)-1]; batchRef.queueName == queueName {
+			batchRef.records = append(batchRef.records, rec)
 		} else {
-			current = messageBatch{}
 			batches = append(batches, messageBatch{
-				queueName: collection,
-				recs:      []opencdc.Record{rec},
+				queueName: queueName,
+				records:   []opencdc.Record{rec},
 			})
 		}
 	}
@@ -180,7 +175,7 @@ func splitIntoBatches(recs []opencdc.Record, defaultQueueName string) []messageB
 func (d *Destination) writeBatches(ctx context.Context, batches []messageBatch) (int, error) {
 	var written int
 	for _, batch := range batches {
-		records := batch.recs
+		records := batch.records
 		for i := 0; i < len(records); i += 10 {
 			end := i + 10
 			if end > len(records) {

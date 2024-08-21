@@ -73,7 +73,7 @@ func TestDestination_SuccessfulMessageSend(t *testing.T) {
 	is.NoErr(err)
 
 	is.Equal(ret, 1)
-	time.Sleep(5 * time.Second)
+	time.Sleep(time.Second)
 
 	message, err := testClient.ReceiveMessage(
 		ctx,
@@ -101,8 +101,8 @@ func TestDestination_FailBadRecord(t *testing.T) {
 	testClient, closeTestClient := testutils.NewSQSClient(ctx, is)
 	defer closeTestClient()
 
-	queueName := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.DestinationConfig(queueName.Name)
+	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
+	cfg := testutils.DestinationConfig(testQueue.Name)
 
 	metadata := opencdc.Metadata{}
 	destination := NewDestination()

@@ -36,27 +36,27 @@ func TestSplitIntoBatches_MultipleBatches(t *testing.T) {
 	}
 
 	batches := splitIntoBatches(recs, "test-queue-default")
-	is.Equal(len(batches), 4)
+	is.Equal(len(batches), 5)
 	is.Equal(batches, []messageBatch{
 		{
 			queueName: "test-queue-default",
-			recs:      recs[:2],
+			records:   recs[:2],
 		},
 		{
 			queueName: "test-queue-col-1",
-			recs:      recs[2:3],
+			records:   recs[2:3],
 		},
 		{
 			queueName: "test-queue-col-2",
-			recs:      recs[3:4],
+			records:   recs[3:4],
 		},
 		{
 			queueName: "test-queue-default",
-			recs:      recs[4:5],
+			records:   recs[4:5],
 		},
 		{
 			queueName: "test-queue-col-3",
-			recs:      recs[5:6],
+			records:   recs[5:6],
 		},
 	})
 }
