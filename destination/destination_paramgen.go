@@ -63,7 +63,7 @@ func (Config) Parameters() map[string]config.Parameter {
 		},
 		ConfigBatchSize: {
 			Default:     "10",
-			Description: "",
+			Description: "BatchSize represents the amount of records written per batch",
 			Type:        config.ParameterTypeInt,
 			Validations: []config.Validation{},
 		},
