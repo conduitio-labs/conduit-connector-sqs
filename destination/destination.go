@@ -286,12 +286,18 @@ func (d *Destination) writeBatches(ctx context.Context, batches []messageBatch) 
 					messageGroupID = groupID
 				}
 
+				var messageDedupID string
+				if dedupID, ok := record.Metadata[DedupIDKey]; ok {
+					messageDedupID = dedupID
+				}
+
 				sqsRecords.Entries = append(sqsRecords.Entries, types.SendMessageBatchRequestEntry{
-					MessageGroupId:    &messageGroupID,
-					MessageAttributes: messageAttributes,
-					MessageBody:       &messageBody,
-					DelaySeconds:      d.config.MessageDelay,
-					Id:                &id,
+					MessageGroupId:         &messageGroupID,
+					MessageDeduplicationId: &messageDedupID,
+					MessageAttributes:      messageAttributes,
+					MessageBody:            &messageBody,
+					DelaySeconds:           d.config.MessageDelay,
+					Id:                     &id,
 				})
 			}
 

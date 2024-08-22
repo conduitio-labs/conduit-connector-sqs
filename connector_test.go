@@ -90,6 +90,7 @@ func TestFifoQueues(t *testing.T) {
 		is.NoErr(src.Ack(ctx, rec.Position))
 	}
 
+	// test that the additional duplicated record wasn't written
 	_, err = src.Read(ctx)
 	is.Equal(err, sdk.ErrBackoffRetry)
 }
