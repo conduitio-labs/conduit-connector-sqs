@@ -14,6 +14,7 @@ const (
 	ConfigAwsRegion          = "aws.region"
 	ConfigAwsSecretAccessKey = "aws.secretAccessKey"
 	ConfigAwsUrl             = "aws.url"
+	ConfigBatchSize          = "batchSize"
 )
 
 func (Config) Parameters() map[string]config.Parameter {
@@ -58,6 +59,12 @@ func (Config) Parameters() map[string]config.Parameter {
 			Default:     "",
 			Description: "AWSURL is the URL for AWS (internal use only).",
 			Type:        config.ParameterTypeString,
+			Validations: []config.Validation{},
+		},
+		ConfigBatchSize: {
+			Default:     "10",
+			Description: "",
+			Type:        config.ParameterTypeInt,
 			Validations: []config.Validation{},
 		},
 	}

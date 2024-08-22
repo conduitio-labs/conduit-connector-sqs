@@ -27,4 +27,7 @@ type Config struct {
 	// MessageDelay represents the length of time, in seconds, for which a
 	// specific message is delayed
 	MessageDelay int32 `json:"aws.delayTime"`
+
+	// BatchSize represents the amount of records written per batch
+	BatchSize int `json:"batchSize" default:"10"`
 }

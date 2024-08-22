@@ -254,11 +254,12 @@ func (d *Destination) splitIntoBatches(recs []opencdc.Record) ([]messageBatch, e
 }
 
 func (d *Destination) writeBatches(ctx context.Context, batches []messageBatch) (int, error) {
+	batchSize := d.config.BatchSize
 	var written int
 	for _, batch := range batches {
 		records := batch.records
-		for i := 0; i < len(records); i += 10 {
-			end := i + 10
+		for i := 0; i < len(records); i += batchSize {
+			end := i + batchSize
 			if end > len(records) {
 				end = len(records)
 			}
