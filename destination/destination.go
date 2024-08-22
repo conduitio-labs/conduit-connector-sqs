@@ -207,7 +207,6 @@ func (parser fromGoTemplateParser) ParseQueueName(rec opencdc.Record) (string, e
 	}
 
 	return sb.String(), nil
-
 }
 
 type messageBatch struct {

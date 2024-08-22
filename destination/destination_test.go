@@ -34,7 +34,12 @@ func TestSplitIntoBatches_Empty(t *testing.T) {
 	is := is.New(t)
 	recs := []opencdc.Record{}
 
-	batches := splitIntoBatches(recs, "test-queue")
+	dest := &Destination{
+		queueNameParser: fromCollectionParser{defaultQueueName: "test-queue"},
+	}
+
+	batches, err := dest.splitIntoBatches(recs)
+	is.NoErr(err)
 	is.Equal(len(batches), 0)
 }
 
@@ -49,8 +54,14 @@ func TestSplitIntoBatches_MultipleBatches(t *testing.T) {
 		recWithMetadata("test-queue-col-3"),
 	}
 
-	batches := splitIntoBatches(recs, "test-queue-default")
+	dest := &Destination{
+		queueNameParser: fromCollectionParser{defaultQueueName: "test-queue-default"},
+	}
+
+	batches, err := dest.splitIntoBatches(recs)
 	is.Equal(len(batches), 5)
+	is.NoErr(err)
+
 	is.Equal(batches, []messageBatch{
 		{
 			queueName: "test-queue-default",
