@@ -127,7 +127,7 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 
 			var messageDeduplicationID *string
 			if dedupID, ok := record.Metadata[DedupIDKey]; ok {
-				messageGroupID = &dedupID
+				messageDeduplicationID = &dedupID
 			}
 
 			sqsRecords.Entries = append(sqsRecords.Entries, types.SendMessageBatchRequestEntry{

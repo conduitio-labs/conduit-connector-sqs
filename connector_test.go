@@ -65,6 +65,17 @@ func TestFifoQueues(t *testing.T) {
 		recs = append(recs, rec)
 	}
 
+	// write a duplicated record to test for sqs dedup functionality
+	recs = append(recs, sdk.Util.Source.NewRecordCreate(
+		opencdc.Position(nil), // doesn't matter
+		opencdc.Metadata{
+			destination.GroupIDKey: "test-group-id",
+			destination.DedupIDKey: "dedup-key-10",
+		},
+		opencdc.RawData("key-10"),
+		opencdc.RawData("val-10"),
+	))
+
 	_, err := dest.Write(ctx, recs)
 	is.NoErr(err)
 
@@ -83,4 +94,7 @@ func TestFifoQueues(t *testing.T) {
 
 		is.NoErr(src.Ack(ctx, rec.Position))
 	}
+
+	_, err = src.Read(ctx)
+	is.Equal(err, sdk.ErrBackoffRetry)
 }
