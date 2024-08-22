@@ -16,10 +16,16 @@ package source
 
 import "github.com/conduitio-labs/conduit-connector-sqs/common"
 
-//go:generate paramgen -output=config_paramgen.go Config
+//go:generate paramgen -output=source_paramgen.go Config
 
 type Config struct {
 	common.Config
-	// visibility timeout
-	AWSSQSVisibilityTimeout int32 `json:"aws.visibilityTimeout" default:"0"`
+
+	// VisibilityTimeout is the duration (in seconds) that the received messages
+	// are hidden from subsequent reads after being retrieved.
+	VisibilityTimeout int32 `json:"aws.visibilityTimeout" default:"0"`
+
+	// WaitTimeSeconds is the duration (in seconds) for which the call waits for
+	// a message to arrive in the queue before returning.
+	WaitTimeSeconds int32 `json:"aws.waitTimeSeconds" default:"10"`
 }

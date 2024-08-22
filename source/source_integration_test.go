@@ -35,7 +35,7 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	defer cleanTestClient()
 
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.IntegrationConfig(testQueue.Name)
+	cfg := testutils.SourceConfig(testQueue.Name)
 
 	messageBody := "Test message body"
 	_, err := testClient.SendMessage(
@@ -75,7 +75,7 @@ func TestSource_OpenWithPosition(t *testing.T) {
 	defer cleanTestClient()
 
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.IntegrationConfig(testQueue.Name)
+	cfg := testutils.SourceConfig(testQueue.Name)
 	{
 		source := NewSource()
 		is.NoErr(source.Configure(ctx, cfg))

@@ -28,7 +28,7 @@ func (Config) Parameters() map[string]config.Parameter {
 		},
 		ConfigAwsDelayTime: {
 			Default:     "0",
-			Description: "amazon sqs message delay time",
+			Description: "MessageDelay represents the length of time, in seconds, for which a\nspecific message is delayed",
 			Type:        config.ParameterTypeInt,
 			Validations: []config.Validation{},
 		},

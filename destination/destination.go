@@ -126,7 +126,7 @@ func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int,
 				MessageGroupId:    messageGroupID,
 				MessageAttributes: messageAttributes,
 				MessageBody:       &messageBody,
-				DelaySeconds:      d.config.AWSSQSMessageDelay,
+				DelaySeconds:      d.config.MessageDelay,
 				Id:                &id,
 			})
 		}

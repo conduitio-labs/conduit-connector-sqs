@@ -21,6 +21,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
+	"github.com/conduitio/conduit-commons/config"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 	"github.com/rs/zerolog"
@@ -80,12 +81,54 @@ func CreateTestQueue(ctx context.Context, t *testing.T, is *is.I, client *sqs.Cl
 	}
 }
 
-func IntegrationConfig(queueName string) map[string]string {
-	return map[string]string{
-		common.ConfigAwsAccessKeyId:     "accessskeymock",
-		common.ConfigAwsSecretAccessKey: "accessssecretmock",
-		common.ConfigAwsRegion:          "us-east-1",
-		common.ConfigAwsUrl:             "http://localhost:4566",
-		common.ConfigAwsQueue:           queueName,
+func CreateTestFifoQueue(ctx context.Context, t *testing.T, is *is.I, client *sqs.Client) TestQueue {
+	is.Helper()
+	queueName := "test-queue-" + uuid.NewString()[:8] + ".fifo"
+
+	_, err := client.CreateQueue(ctx, &sqs.CreateQueueInput{
+		QueueName: &queueName,
+		Attributes: map[string]string{
+			"FifoQueue":                 "true",
+			"ContentBasedDeduplication": "true",
+		},
+	})
+	is.NoErr(err)
+
+	queueInput := &sqs.GetQueueUrlInput{QueueName: &queueName}
+	urlResult, err := client.GetQueueUrl(ctx, queueInput)
+	is.NoErr(err)
+
+	t.Cleanup(func() {
+		_, err := client.DeleteQueue(ctx, &sqs.DeleteQueueInput{
+			QueueUrl: urlResult.QueueUrl,
+		})
+		is.NoErr(err)
+	})
+
+	return TestQueue{
+		Name: queueName,
+		URL:  urlResult.QueueUrl,
+	}
+}
+
+func SourceConfig(queueName string) config.Config {
+	return config.Config{
+		"aws.accessKeyId":       "accessskeymock",
+		"aws.secretAccessKey":   "accessssecretmock",
+		"aws.region":            "us-east-1",
+		"aws.url":               "http://localhost:4566",
+		"aws.queue":             queueName,
+		"aws.visibilityTimeout": "1",
+		"aws.waitTimeSeconds":   "0",
+	}
+}
+
+func DestinationConfig(queueName string) config.Config {
+	return config.Config{
+		"aws.accessKeyId":     "accessskeymock",
+		"aws.secretAccessKey": "accessssecretmock",
+		"aws.region":          "us-east-1",
+		"aws.url":             "http://localhost:4566",
+		"aws.queue":           queueName,
 	}
 }

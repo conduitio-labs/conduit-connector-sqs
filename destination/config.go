@@ -16,10 +16,12 @@ package destination
 
 import "github.com/conduitio-labs/conduit-connector-sqs/common"
 
-//go:generate paramgen -output=config_paramgen.go Config
+//go:generate paramgen -output=destination_paramgen.go Config
 
 type Config struct {
 	common.Config
-	// amazon sqs message delay time
-	AWSSQSMessageDelay int32 `json:"aws.delayTime" default:"0"`
+
+	// MessageDelay represents the length of time, in seconds, for which a
+	// specific message is delayed
+	MessageDelay int32 `json:"aws.delayTime" default:"0"`
 }

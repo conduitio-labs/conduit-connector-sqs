@@ -104,7 +104,8 @@ func (s *Source) Read(ctx context.Context) (rec opencdc.Record, err error) {
 		},
 		QueueUrl:            &s.queueURL,
 		MaxNumberOfMessages: 1,
-		VisibilityTimeout:   s.config.AWSSQSVisibilityTimeout,
+		VisibilityTimeout:   s.config.VisibilityTimeout,
+		WaitTimeSeconds:     s.config.WaitTimeSeconds,
 	}
 
 	// grab a message from queue
