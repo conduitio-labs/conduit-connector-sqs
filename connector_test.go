@@ -137,12 +137,9 @@ func TestMulticollection_MultipleQueues(t *testing.T) {
 	recs := []opencdc.Record{
 		genRecord(defaultQueue.Name),
 		genRecord(defaultQueue.Name),
-
 		genRecord(testQueue1.Name),
 		genRecord(testQueue1.Name),
-
 		genRecord(testQueue2.Name),
-
 		genRecord(defaultQueue.Name),
 	}
 
