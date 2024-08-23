@@ -22,7 +22,7 @@ type Config struct {
 	common.Config
 
 	// AWSQueue is the sqs queue name
-	AWSQueue string `json:"aws.queue" default:"{{ index .Metadata \"opencdc.collection\" }}"`
+	AWSQueue string `json:"aws.queue" validate:"required"`
 
 	// VisibilityTimeout is the duration (in seconds) that the received messages
 	// are hidden from subsequent reads after being retrieved.

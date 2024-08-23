@@ -22,7 +22,7 @@ type Config struct {
 	common.Config
 
 	// AWSQueue is the sqs queue name
-	AWSQueue string `json:"aws.queue" validate:"required"`
+	AWSQueue string `json:"aws.queue" default:"{{ index .Metadata \"opencdc.collection\" }}"`
 
 	// MessageDelay represents the length of time, in seconds, for which a
 	// specific message is delayed

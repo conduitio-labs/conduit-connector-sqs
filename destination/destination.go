@@ -70,8 +70,10 @@ func (d *Destination) Configure(ctx context.Context, cfg config.Config) error {
 			return fmt.Errorf("failed to create template parser: %w", err)
 		}
 		d.queueNameParser = parser
+	case queue != "":
+		d.queueNameParser = staticParser{queue}
 	default:
-		d.queueNameParser = fromCollectionParser{queue}
+		d.queueNameParser = fromCollectionParser{}
 	}
 
 	return nil
@@ -163,19 +165,19 @@ type queueNameParser interface {
 	ParseQueueName(opencdc.Record) (string, error)
 }
 
-// fromCollectionParser parses queue names from the record collection field. If
-// none found, it will return the defaultQueueName as the obtained queue name.
-type fromCollectionParser struct {
-	defaultQueueName string
+// staticParser always returns the same queue name when parsing a record. Useful
+// when user has given a specific queue name.
+type staticParser struct{ queueName string }
+
+func (parser staticParser) ParseQueueName(rec opencdc.Record) (string, error) {
+	return parser.queueName, nil
 }
 
-func (parser fromCollectionParser) ParseQueueName(rec opencdc.Record) (string, error) {
-	queueName, err := rec.Metadata.GetCollection()
-	if err != nil {
-		return parser.defaultQueueName, nil
-	}
+// fromCollectionParser parses queue names from the record collection field.
+type fromCollectionParser struct{}
 
-	return queueName, nil
+func (parser fromCollectionParser) ParseQueueName(rec opencdc.Record) (string, error) {
+	return rec.Metadata.GetCollection()
 }
 
 // fromGoTemplateParser parses queue names from the given go template.
