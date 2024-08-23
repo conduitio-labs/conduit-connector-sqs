@@ -29,7 +29,7 @@ func (Config) Parameters() map[string]config.Parameter {
 		},
 		ConfigAwsQueue: {
 			Default:     "",
-			Description: "AWSQueue is the sqs queue name",
+			Description: "QueueName is the sqs queue name",
 			Type:        config.ParameterTypeString,
 			Validations: []config.Validation{
 				config.ValidationRequired{},

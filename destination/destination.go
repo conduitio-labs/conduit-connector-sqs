@@ -35,10 +35,10 @@ import (
 
 type Destination struct {
 	sdk.UnimplementedDestination
-	config          Config
-	svc             *sqs.Client
-	queueNameParser queueNameParser
-	queueURLMap     *queueURLMap
+	config         Config
+	svc            *sqs.Client
+	parseQueueName queueNameParser
+	queueURLMap    *queueURLMap
 
 	// httpClient allows us to cleanup left over http connections. Useful to not
 	// leak goroutines when tearing down the connector
@@ -63,17 +63,19 @@ func (d *Destination) Configure(ctx context.Context, cfg config.Config) error {
 		return fmt.Errorf("failed to parse destination config : %w", err)
 	}
 
-	switch queue := d.config.AWSQueue; {
+	switch queue := d.config.QueueName; {
 	case isGoTemplate(queue):
-		parser, err := newFromGoTemplateParser(queue)
+		parser, err := parserFromGoTemplate(queue)
 		if err != nil {
 			return fmt.Errorf("failed to create template parser: %w", err)
 		}
-		d.queueNameParser = parser
-	case queue != "":
-		d.queueNameParser = staticParser{queue}
+		d.parseQueueName = parser
+	case queue != "" && !d.config.UseQueueName:
+		d.parseQueueName = parserFromCollectionWithDefault(queue)
+	case queue != "" && d.config.UseQueueName:
+		d.parseQueueName = staticParser(queue)
 	default:
-		d.queueNameParser = fromCollectionParser{}
+		d.parseQueueName = parseAlwaysFromCollection
 	}
 
 	return nil
@@ -87,12 +89,12 @@ func (d *Destination) Open(ctx context.Context) (err error) {
 
 	d.queueURLMap = newQueueURLMap(d.svc)
 
-	if !isGoTemplate(d.config.AWSQueue) {
+	if !isGoTemplate(d.config.QueueName) {
 		// we can be nice to the user and inform them that the queue that they did
 		// specify exists and that the connector has access to it.
 
 		urlResult, err := d.svc.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
-			QueueName: &d.config.AWSQueue,
+			QueueName: &d.config.QueueName,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to get sqs queue url : %w", err)
@@ -161,54 +163,50 @@ func (m *queueURLMap) getURLForQueue(ctx context.Context, queueName string) (str
 	return url, nil
 }
 
-type queueNameParser interface {
-	ParseQueueName(opencdc.Record) (string, error)
+type queueNameParser func(opencdc.Record) (string, error)
+
+func parserFromCollectionWithDefault(defaultQueueName string) queueNameParser {
+	return func(rec opencdc.Record) (string, error) {
+		queueName, err := rec.Metadata.GetCollection()
+		if err != nil {
+			return defaultQueueName, nil
+		}
+
+		return queueName, nil
+	}
 }
 
-// staticParser always returns the same queue name when parsing a record. Useful
-// when user has given a specific queue name.
-type staticParser struct{ queueName string }
-
-func (parser staticParser) ParseQueueName(rec opencdc.Record) (string, error) {
-	return parser.queueName, nil
+func staticParser(queueName string) queueNameParser {
+	return func(_ opencdc.Record) (string, error) {
+		return queueName, nil
+	}
 }
 
-// fromCollectionParser parses queue names from the record collection field.
-type fromCollectionParser struct{}
-
-func (parser fromCollectionParser) ParseQueueName(rec opencdc.Record) (string, error) {
+func parseAlwaysFromCollection(rec opencdc.Record) (string, error) {
 	return rec.Metadata.GetCollection()
 }
 
-// fromGoTemplateParser parses queue names from the given go template.
-type fromGoTemplateParser struct {
-	contents string
-	template *template.Template
-}
-
-func newFromGoTemplateParser(templateContents string) (*fromGoTemplateParser, error) {
+func parserFromGoTemplate(templateContents string) (queueNameParser, error) {
 	t, err := template.New("parser").Parse(templateContents)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
 	}
 
-	return &fromGoTemplateParser{templateContents, t}, nil
-}
+	return func(rec opencdc.Record) (string, error) {
+		var sb strings.Builder
+		if err := t.Execute(&sb, rec); err != nil {
+			return "", fmt.Errorf("failed to parse streamName from template: %w", err)
+		}
 
-func (parser fromGoTemplateParser) ParseQueueName(rec opencdc.Record) (string, error) {
-	var sb strings.Builder
-	if err := parser.template.Execute(&sb, rec); err != nil {
-		return "", fmt.Errorf("failed to parse streamName from template: %w", err)
-	}
+		if sb.Len() == 0 {
+			return "", fmt.Errorf(
+				"streamName not found in record %s from template %s",
+				string(rec.Key.Bytes()), templateContents,
+			)
+		}
 
-	if sb.Len() == 0 {
-		return "", fmt.Errorf(
-			"streamName not found in record %s from template %s",
-			string(rec.Key.Bytes()), parser.contents,
-		)
-	}
-
-	return sb.String(), nil
+		return sb.String(), nil
+	}, nil
 }
 
 type messageBatch struct {
@@ -219,7 +217,7 @@ type messageBatch struct {
 func (d *Destination) splitIntoBatches(recs []opencdc.Record) ([]messageBatch, error) {
 	var batches []messageBatch
 	for _, rec := range recs {
-		queueName, err := d.queueNameParser.ParseQueueName(rec)
+		queueName, err := d.parseQueueName(rec)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse queue name while batching: %w", err)
 		}

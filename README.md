@@ -16,7 +16,8 @@ The destination connector batches incoming records into 10 and pushes them to th
 
 It can work in three modes, depending of the `aws.queue` parameter:
 
-- with a queue name: the connector will obtain the queue url from the given sqs queue name, and write records there.
+- with a queue name: the connector tries to obtain the queue name from the `opencdc.collection`. If none found, defaults to the given `aws.queue`.
+- with a queue name (with `aws.queue.useQueue` true): the connector always writes to the given `aws.queue`.
 - with a go template: the connector will evaluate the given go template against each record to obtain the queue name.
 - empty queue name: the connector will try to obtain the queue name from the `opencdc.collection` metadata field.
 
@@ -39,16 +40,17 @@ The configuration passed to `Configure` can contain the following fields:
 
 #### Destination
 
-| name                              | description                                                            | required | example                                      |
-| --------------------------------- | ---------------------------------------------------------------------- | -------- | -------------------------------------------- |
-| `aws.accessKeyId`                 | AWS Access Key ID                                                      | yes      | "THE_ACCESS_KEY_ID"                          |
-| `aws.secretAccessKey`             | AWS Secret Access Key                                                  | yes      | "SECRET_ACCESS_KEY"                          |
-| `aws.region`                      | AWS SQS Region                                                         | yes      | "us-east-1"                                  |
-| `aws.queue` (as a sqs queue name) | AWS queue name. Records will be written there                          | no       | `my-sqs-queue`                               |
-| `aws.queue` (as a go template)    | Go template that is evaluated at runtime to obtain the queue name      | no       | `{{ index .Metadata "opencdc.collection" }}` |
-| `aws.queue` (empty)               | Makes the connector fetch the queue name from the `opencdc.collection` | no       | ""                                           |
-| `aws.visibilityTimeout`           | AWS SQS Message Visibility Timeout                                     | yes      | "5"                                          |
-| `aws.url`                         | URL for AWS (internal use only)                                        | no       |                                              |
+| name                              | description                                                                                                                                                              | required | example                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | -------------------------------------------- |
+| `aws.accessKeyId`                 | AWS Access Key ID                                                                                                                                                        | yes      | "THE_ACCESS_KEY_ID"                          |
+| `aws.secretAccessKey`             | AWS Secret Access Key                                                                                                                                                    | yes      | "SECRET_ACCESS_KEY"                          |
+| `aws.region`                      | AWS SQS Region                                                                                                                                                           | yes      | "us-east-1"                                  |
+| `aws.queue` (as a sqs queue name) | AWS queue name                                                                                                                                                           | no       | "QUEUE_NAME"                                 |
+| `aws.queue` (as a go template)    | Go template that is evaluated at runtime against a record to obtain the queue name                                                                                       | no       | `{{ index .Metadata "opencdc.collection" }}` |
+| `aws.queue` (empty)               | Makes the connector fetch the queue name from the `opencdc.collection`                                                                                                   | no       |                                              |
+| `aws.queue.useQueue`              | Forces the connector to write to the specified queue name, ignoring the `opencdc.collection` metadata field. Only relevant when `aws.queue` is given as a sqs queue name | no       |
+| `aws.visibilityTimeout`           | AWS SQS Message Visibility Timeout                                                                                                                                       | yes      | "5"                                          |
+| `aws.url`                         | URL for AWS (internal use only)                                                                                                                                          | no       |                                              |
 
 ## How to use FIFO queues with the connector
 

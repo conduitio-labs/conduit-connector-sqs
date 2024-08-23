@@ -67,17 +67,17 @@ func (s *Source) Open(ctx context.Context, sdkPos opencdc.Position) (err error) 
 
 	sdk.Logger(ctx).Info().Msg("connected to sqs")
 
-	queueName := &s.config.AWSQueue
+	queueName := &s.config.QueueName
 	if sdkPos != nil {
 		pos, err := common.ParsePosition(sdkPos)
 		if err != nil {
 			return fmt.Errorf("failed to parse source position: %w", err)
 		}
 
-		if s.config.AWSQueue != "" && s.config.AWSQueue != pos.QueueName {
+		if s.config.QueueName != "" && s.config.QueueName != pos.QueueName {
 			return fmt.Errorf(
 				"the old position contains a different queue name than the connector configuration (%q vs %q), please check if the configured queue name changed since the last run",
-				pos.QueueName, s.config.AWSQueue,
+				pos.QueueName, s.config.QueueName,
 			)
 		}
 
@@ -129,7 +129,7 @@ func (s *Source) Read(ctx context.Context) (rec opencdc.Record, err error) {
 
 	position := common.Position{
 		ReceiptHandle: *message.ReceiptHandle,
-		QueueName:     s.config.AWSQueue,
+		QueueName:     s.config.QueueName,
 	}.ToSdkPosition()
 
 	rec = sdk.Util.Source.NewRecordCreate(

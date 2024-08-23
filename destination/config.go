@@ -21,8 +21,12 @@ import "github.com/conduitio-labs/conduit-connector-sqs/common"
 type Config struct {
 	common.Config
 
-	// AWSQueue is the sqs queue name
-	AWSQueue string `json:"aws.queue" default:"{{ index .Metadata \"opencdc.collection\" }}"`
+	// QueueName is the sqs queue name
+	QueueName string `json:"aws.queue" default:"{{ index .Metadata \"opencdc.collection\" }}"`
+
+	// UseQueueName makes the connector always write to the specified queue name.
+	// Only relevant when `aws.queue` is given as a sqs queue name.
+	UseQueueName bool `json:"aws.queue.useQueue" default:"false"`
 
 	// MessageDelay represents the length of time, in seconds, for which a
 	// specific message is delayed

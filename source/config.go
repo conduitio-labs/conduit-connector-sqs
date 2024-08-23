@@ -21,8 +21,8 @@ import "github.com/conduitio-labs/conduit-connector-sqs/common"
 type Config struct {
 	common.Config
 
-	// AWSQueue is the sqs queue name
-	AWSQueue string `json:"aws.queue" validate:"required"`
+	// QueueName is the sqs queue name
+	QueueName string `json:"aws.queue" validate:"required"`
 
 	// VisibilityTimeout is the duration (in seconds) that the received messages
 	// are hidden from subsequent reads after being retrieved.
