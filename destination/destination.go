@@ -89,12 +89,12 @@ func (d *Destination) Open(ctx context.Context) (err error) {
 
 	d.queueURLMap = newQueueURLMap(d.svc)
 
-	if !isGoTemplate(d.config.QueueName) {
-		// we can be nice to the user and inform them that the queue that they did
-		// specify exists and that the connector has access to it.
+	if queueName := d.config.QueueName; !isGoTemplate(queueName) {
+		// We also cache the queue url when parsing records into batches, but doing
+		// it while at `.Open` ensures that the given queue exists and no typo was made.
 
 		urlResult, err := d.svc.GetQueueUrl(ctx, &sqs.GetQueueUrlInput{
-			QueueName: &d.config.QueueName,
+			QueueName: &queueName,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to get sqs queue url : %w", err)
@@ -103,6 +103,8 @@ func (d *Destination) Open(ctx context.Context) (err error) {
 		queueURL := *urlResult.QueueUrl
 
 		sdk.Logger(ctx).Info().Msgf("writing to queue %v", queueURL)
+
+		d.queueURLMap.setQueueURL(queueName, queueURL)
 	}
 
 	return nil
@@ -142,6 +144,10 @@ func newQueueURLMap(client *sqs.Client) *queueURLMap {
 		client: client,
 		cache:  cache,
 	}
+}
+
+func (m *queueURLMap) setQueueURL(queueName, queueURL string) {
+	m.cache.Set(queueName, queueURL)
 }
 
 func (m *queueURLMap) getURLForQueue(ctx context.Context, queueName string) (string, error) {
@@ -214,6 +220,21 @@ type messageBatch struct {
 	records   []opencdc.Record
 }
 
+// splitIntoBatches parses a list of records into batches based on the queueName
+// of the records. The batches are returned in the order they were parsed.
+// They are grouped in the following manner:
+//   - record 1, queueName 1
+//   - record 2, queueName 1
+//   - record 3, queueName 2
+//   - record 4, queueName 1
+//   - record 5, queueName 1
+//
+// Will return the following batches:
+//   - batch 1: [record 1, record 2]
+//   - batch 2: [record 3]
+//   - batch 3: [record 4, record 5]
+//
+// They are parsed this way to preserve write order.
 func (d *Destination) splitIntoBatches(recs []opencdc.Record) ([]messageBatch, error) {
 	var batches []messageBatch
 	for _, rec := range recs {
