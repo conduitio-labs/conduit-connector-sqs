@@ -15,6 +15,7 @@
 package sqs
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -95,6 +96,35 @@ func TestFifoQueues(t *testing.T) {
 	is.Equal(err, sdk.ErrBackoffRetry)
 }
 
+type multicollectionTestCase struct {
+	QueueName       string
+	ExpectedRecords []opencdc.Record
+}
+
+func (testCase multicollectionTestCase) eval(ctx context.Context, is *is.I) {
+	source := source.NewSource()
+	cfg := testutils.SourceConfig(testCase.QueueName)
+
+	is.NoErr(source.Configure(ctx, cfg))
+	is.NoErr(source.Open(ctx, nil))
+
+	for _, expectedRec := range testCase.ExpectedRecords {
+		rec, err := source.Read(ctx)
+		is.NoErr(err)
+
+		var actualRec opencdc.Record
+		is.NoErr(json.Unmarshal(rec.Payload.After.Bytes(), &actualRec))
+
+		is.Equal(cmp.Diff(expectedRec, actualRec, cmpopts.IgnoreUnexported(
+			expectedRec, actualRec,
+		)), "")
+
+		is.NoErr(source.Ack(ctx, rec.Position))
+	}
+
+	is.NoErr(source.Teardown(ctx))
+}
+
 func TestMulticollection_MultipleQueues(t *testing.T) {
 	is := is.New(t)
 	ctx := testutils.TestContext(t)
@@ -143,44 +173,12 @@ func TestMulticollection_MultipleQueues(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(written, len(recs))
 
-	for _, testCase := range []struct {
-		QueueName       string
-		ExpectedRecords []opencdc.Record
-	}{
-		{
-			QueueName:       testQueue1.Name,
-			ExpectedRecords: recs[:2],
-		},
-		{
-			QueueName:       testQueue2.Name,
-			ExpectedRecords: recs[2:4],
-		},
-		{
-			QueueName:       testQueue3.Name,
-			ExpectedRecords: recs[4:6],
-		},
+	for _, testCase := range []multicollectionTestCase{
+		{QueueName: testQueue1.Name, ExpectedRecords: recs[:2]},
+		{QueueName: testQueue2.Name, ExpectedRecords: recs[2:4]},
+		{QueueName: testQueue3.Name, ExpectedRecords: recs[4:6]},
 	} {
-		source := source.NewSource()
-		cfg := testutils.SourceConfig(testCase.QueueName)
-
-		is.NoErr(source.Configure(ctx, cfg))
-		is.NoErr(source.Open(ctx, nil))
-
-		for _, expectedRec := range testCase.ExpectedRecords {
-			rec, err := source.Read(ctx)
-			is.NoErr(err)
-
-			var actualRec opencdc.Record
-			is.NoErr(json.Unmarshal(rec.Payload.After.Bytes(), &actualRec))
-
-			is.Equal(cmp.Diff(expectedRec, actualRec, cmpopts.IgnoreUnexported(
-				expectedRec, actualRec,
-			)), "")
-
-			is.NoErr(source.Ack(ctx, rec.Position))
-		}
-
-		is.NoErr(source.Teardown(ctx))
+		testCase.eval(ctx, is)
 	}
 }
 
@@ -228,39 +226,10 @@ func TestMulticollection_QueueNameAsTemplate(t *testing.T) {
 	is.NoErr(err)
 	is.Equal(written, 2)
 
-	for _, testCase := range []struct {
-		QueueName       string
-		ExpectedRecords []opencdc.Record
-	}{
-		{
-			QueueName:       testQueue1.Name,
-			ExpectedRecords: recs[:1],
-		},
-		{
-			QueueName:       testQueue2.Name,
-			ExpectedRecords: recs[1:],
-		},
+	for _, testCase := range []multicollectionTestCase{
+		{QueueName: testQueue1.Name, ExpectedRecords: recs[:1]},
+		{QueueName: testQueue2.Name, ExpectedRecords: recs[1:]},
 	} {
-		source := source.NewSource()
-		cfg := testutils.SourceConfig(testCase.QueueName)
-
-		is.NoErr(source.Configure(ctx, cfg))
-		is.NoErr(source.Open(ctx, nil))
-
-		for _, expectedRec := range testCase.ExpectedRecords {
-			rec, err := source.Read(ctx)
-			is.NoErr(err)
-
-			var actualRec opencdc.Record
-			is.NoErr(json.Unmarshal(rec.Payload.After.Bytes(), &actualRec))
-
-			is.Equal(cmp.Diff(expectedRec, actualRec, cmpopts.IgnoreUnexported(
-				expectedRec, actualRec,
-			)), "")
-
-			is.NoErr(source.Ack(ctx, rec.Position))
-		}
-
-		is.NoErr(source.Teardown(ctx))
+		testCase.eval(ctx, is)
 	}
 }
