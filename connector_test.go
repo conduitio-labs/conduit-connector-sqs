@@ -102,15 +102,15 @@ func TestMulticollection_MultipleQueues(t *testing.T) {
 	testClient, closeTestClient := testutils.NewSQSClient(ctx, is)
 	defer closeTestClient()
 
-	// Records will be written here if no collection found.
-	defaultQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-
 	testQueue1 := testutils.CreateTestQueue(ctx, t, is, testClient)
 	testQueue2 := testutils.CreateTestQueue(ctx, t, is, testClient)
+	testQueue3 := testutils.CreateTestQueue(ctx, t, is, testClient)
+
+	queueName := "" // empty to force fetch from `opencdc.collection` metadata field
 
 	destination, cleanDestination := testutils.StartDestination(
 		ctx, is, destination.NewDestination(),
-		defaultQueue.Name,
+		queueName,
 	)
 	defer cleanDestination()
 
@@ -125,22 +125,18 @@ func TestMulticollection_MultipleQueues(t *testing.T) {
 			},
 		}
 
-		if queueName != defaultQueue.Name {
-			rec.Metadata = opencdc.Metadata{}
-			rec.Metadata.SetCollection(queueName)
-			return rec
-		}
-
+		rec.Metadata = opencdc.Metadata{}
+		rec.Metadata.SetCollection(queueName)
 		return rec
 	}
 
 	recs := []opencdc.Record{
-		genRecord(defaultQueue.Name),
-		genRecord(defaultQueue.Name),
 		genRecord(testQueue1.Name),
 		genRecord(testQueue1.Name),
 		genRecord(testQueue2.Name),
-		genRecord(defaultQueue.Name),
+		genRecord(testQueue2.Name),
+		genRecord(testQueue3.Name),
+		genRecord(testQueue3.Name),
 	}
 
 	written, err := destination.Write(ctx, recs)
@@ -152,20 +148,16 @@ func TestMulticollection_MultipleQueues(t *testing.T) {
 		ExpectedRecords []opencdc.Record
 	}{
 		{
-			QueueName:       defaultQueue.Name,
+			QueueName:       testQueue1.Name,
 			ExpectedRecords: recs[:2],
 		},
 		{
-			QueueName:       testQueue1.Name,
+			QueueName:       testQueue2.Name,
 			ExpectedRecords: recs[2:4],
 		},
 		{
-			QueueName:       testQueue2.Name,
-			ExpectedRecords: recs[4:5],
-		},
-		{
-			QueueName:       defaultQueue.Name,
-			ExpectedRecords: recs[5:6],
+			QueueName:       testQueue3.Name,
+			ExpectedRecords: recs[4:6],
 		},
 	} {
 		source := source.NewSource()
