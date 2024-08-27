@@ -70,9 +70,7 @@ func (d *Destination) Configure(ctx context.Context, cfg config.Config) error {
 			return fmt.Errorf("failed to create template parser: %w", err)
 		}
 		d.parseQueueName = parser
-	case queue != "" && !d.config.UseQueueName:
-		d.parseQueueName = parserFromCollectionWithDefault(queue)
-	case queue != "" && d.config.UseQueueName:
+	case queue != "":
 		d.parseQueueName = staticParser(queue)
 	default:
 		d.parseQueueName = parseAlwaysFromCollection
@@ -171,17 +169,6 @@ func (m *queueURLMap) getURLForQueue(ctx context.Context, queueName string) (str
 
 type queueNameParser func(opencdc.Record) (string, error)
 
-func parserFromCollectionWithDefault(defaultQueueName string) queueNameParser {
-	return func(rec opencdc.Record) (string, error) {
-		queueName, err := rec.Metadata.GetCollection()
-		if err != nil {
-			return defaultQueueName, nil
-		}
-
-		return queueName, nil
-	}
-}
-
 func staticParser(queueName string) queueNameParser {
 	return func(_ opencdc.Record) (string, error) {
 		return queueName, nil
@@ -198,8 +185,10 @@ func parserFromGoTemplate(templateContents string) (queueNameParser, error) {
 		return nil, fmt.Errorf("failed to parse template: %w", err)
 	}
 
+	var sb strings.Builder
 	return func(rec opencdc.Record) (string, error) {
-		var sb strings.Builder
+		sb.Reset()
+
 		if err := t.Execute(&sb, rec); err != nil {
 			return "", fmt.Errorf("failed to parse streamName from template: %w", err)
 		}

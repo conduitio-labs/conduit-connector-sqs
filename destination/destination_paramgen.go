@@ -11,7 +11,6 @@ const (
 	ConfigAwsAccessKeyId     = "aws.accessKeyId"
 	ConfigAwsDelayTime       = "aws.delayTime"
 	ConfigAwsQueue           = "aws.queue"
-	ConfigAwsQueueUseQueue   = "aws.queue.useQueue"
 	ConfigAwsRegion          = "aws.region"
 	ConfigAwsSecretAccessKey = "aws.secretAccessKey"
 	ConfigAwsUrl             = "aws.url"
@@ -28,7 +27,7 @@ func (Config) Parameters() map[string]config.Parameter {
 			},
 		},
 		ConfigAwsDelayTime: {
-			Default:     "0",
+			Default:     "",
 			Description: "MessageDelay represents the length of time, in seconds, for which a\nspecific message is delayed",
 			Type:        config.ParameterTypeInt,
 			Validations: []config.Validation{},
@@ -37,12 +36,6 @@ func (Config) Parameters() map[string]config.Parameter {
 			Default:     "{{ index .Metadata \"opencdc.collection\" }}",
 			Description: "QueueName is the sqs queue name",
 			Type:        config.ParameterTypeString,
-			Validations: []config.Validation{},
-		},
-		ConfigAwsQueueUseQueue: {
-			Default:     "false",
-			Description: "UseQueueName makes the connector always write to the specified queue name.\nOnly relevant when `aws.queue` is given as a sqs queue name.",
-			Type:        config.ParameterTypeBool,
 			Validations: []config.Validation{},
 		},
 		ConfigAwsRegion: {
