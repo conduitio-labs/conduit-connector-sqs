@@ -15,6 +15,7 @@
 package sqs
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -24,6 +25,9 @@ import (
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/uuid"
 	"github.com/matryer/is"
 )
 
@@ -35,20 +39,12 @@ func TestFifoQueues(t *testing.T) {
 	defer cleanTestClient()
 
 	testQueue := testutils.CreateTestFifoQueue(ctx, t, is, testClient)
-	srcCfg := testutils.SourceConfig(testQueue.Name)
-	srcCfg[source.ConfigAwsVisibilityTimeout] = "1"
-	srcCfg[source.ConfigAwsWaitTimeSeconds] = "2"
-	destCfg := testutils.DestinationConfig(testQueue.Name)
 
-	src := source.NewSource()
-	is.NoErr(src.Configure(ctx, srcCfg))
-	is.NoErr(src.Open(ctx, nil))
-	defer func() { is.NoErr(src.Teardown(ctx)) }()
+	src, cleanSrc := testutils.StartSource(ctx, is, source.NewSource(), testQueue.Name)
+	defer cleanSrc()
 
-	dest := destination.NewDestination()
-	is.NoErr(dest.Configure(ctx, destCfg))
-	is.NoErr(dest.Open(ctx))
-	defer func() { is.NoErr(dest.Teardown(ctx)) }()
+	dest, cleanDest := testutils.StartDestination(ctx, is, destination.NewDestination(), testQueue.Name)
+	defer cleanDest()
 
 	var recs []opencdc.Record
 	for i := 1; i <= 10; i++ {
@@ -95,6 +91,145 @@ func TestFifoQueues(t *testing.T) {
 		is.NoErr(src.Ack(ctx, rec.Position))
 	}
 
+	// test that the additional duplicated record wasn't written
 	_, err = src.Read(ctx)
 	is.Equal(err, sdk.ErrBackoffRetry)
+}
+
+type multicollectionTestCase struct {
+	QueueName       string
+	ExpectedRecords []opencdc.Record
+}
+
+func (testCase multicollectionTestCase) eval(ctx context.Context, is *is.I) {
+	source := source.NewSource()
+	cfg := testutils.SourceConfig(testCase.QueueName)
+
+	is.NoErr(source.Configure(ctx, cfg))
+	is.NoErr(source.Open(ctx, nil))
+
+	for _, expectedRec := range testCase.ExpectedRecords {
+		rec, err := source.Read(ctx)
+		is.NoErr(err)
+
+		var actualRec opencdc.Record
+		is.NoErr(json.Unmarshal(rec.Payload.After.Bytes(), &actualRec))
+
+		is.Equal(cmp.Diff(expectedRec, actualRec, cmpopts.IgnoreUnexported(
+			expectedRec, actualRec,
+		)), "")
+
+		is.NoErr(source.Ack(ctx, rec.Position))
+	}
+
+	is.NoErr(source.Teardown(ctx))
+}
+
+func TestMulticollection_MultipleQueues(t *testing.T) {
+	is := is.New(t)
+	ctx := testutils.TestContext(t)
+
+	testClient, closeTestClient := testutils.NewSQSClient(ctx, is)
+	defer closeTestClient()
+
+	testQueue1 := testutils.CreateTestQueue(ctx, t, is, testClient)
+	testQueue2 := testutils.CreateTestQueue(ctx, t, is, testClient)
+	testQueue3 := testutils.CreateTestQueue(ctx, t, is, testClient)
+
+	queueName := "" // empty to force fetch from `opencdc.collection` metadata field
+
+	destination, cleanDestination := testutils.StartDestination(
+		ctx, is, destination.NewDestination(),
+		queueName,
+	)
+	defer cleanDestination()
+
+	genRecord := func(queueName string) opencdc.Record {
+		rec := opencdc.Record{
+			Position:  nil,
+			Operation: opencdc.OperationCreate,
+			Key:       opencdc.RawData(uuid.NewString()),
+			Payload: opencdc.Change{
+				Before: opencdc.StructuredData(nil),
+				After:  opencdc.StructuredData(nil),
+			},
+		}
+
+		rec.Metadata = opencdc.Metadata{}
+		rec.Metadata.SetCollection(queueName)
+		return rec
+	}
+
+	recs := []opencdc.Record{
+		genRecord(testQueue1.Name),
+		genRecord(testQueue1.Name),
+		genRecord(testQueue2.Name),
+		genRecord(testQueue2.Name),
+		genRecord(testQueue3.Name),
+		genRecord(testQueue3.Name),
+	}
+
+	written, err := destination.Write(ctx, recs)
+	is.NoErr(err)
+	is.Equal(written, len(recs))
+
+	for _, testCase := range []multicollectionTestCase{
+		{QueueName: testQueue1.Name, ExpectedRecords: recs[:2]},
+		{QueueName: testQueue2.Name, ExpectedRecords: recs[2:4]},
+		{QueueName: testQueue3.Name, ExpectedRecords: recs[4:6]},
+	} {
+		testCase.eval(ctx, is)
+	}
+}
+
+func TestMulticollection_QueueNameAsTemplate(t *testing.T) {
+	is := is.New(t)
+	ctx := testutils.TestContext(t)
+
+	testClient, closeTestClient := testutils.NewSQSClient(ctx, is)
+	defer closeTestClient()
+
+	testQueue1 := testutils.CreateTestQueue(ctx, t, is, testClient)
+	testQueue2 := testutils.CreateTestQueue(ctx, t, is, testClient)
+
+	template := `{{ index .Metadata "sqsQueueName" }}`
+
+	destination, cleanDestination := testutils.StartDestination(
+		ctx, is, destination.NewDestination(),
+		template,
+	)
+	defer cleanDestination()
+
+	genRecord := func(queueName string) opencdc.Record {
+		rec := opencdc.Record{
+			Position:  nil,
+			Operation: opencdc.OperationCreate,
+			Key:       opencdc.RawData(uuid.NewString()),
+			Payload: opencdc.Change{
+				Before: opencdc.StructuredData(nil),
+				After:  opencdc.StructuredData(nil),
+			},
+		}
+
+		rec.Metadata = opencdc.Metadata{
+			"sqsQueueName": queueName,
+		}
+		return rec
+	}
+
+	recs := []opencdc.Record{
+		genRecord(testQueue1.Name),
+		genRecord(testQueue2.Name),
+	}
+
+	written, err := destination.Write(ctx, recs)
+	is.NoErr(err)
+	is.Equal(written, 2)
+
+	for _, testCase := range []multicollectionTestCase{
+		{QueueName: testQueue1.Name, ExpectedRecords: recs[:1]},
+		{QueueName: testQueue2.Name, ExpectedRecords: recs[1:]},
+	} {
+		testCase.eval(ctx, is)
+	}
 }

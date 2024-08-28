@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	"github.com/conduitio/conduit-commons/config"
+	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
 	"github.com/rs/zerolog"
@@ -130,5 +131,28 @@ func DestinationConfig(queueName string) config.Config {
 		"aws.region":          "us-east-1",
 		"aws.url":             "http://localhost:4566",
 		"aws.queue":           queueName,
+	}
+}
+
+func StartSource(ctx context.Context, is *is.I, s sdk.Source, queueName string) (sdk.Source, func()) {
+	is.NoErr(s.Configure(ctx, SourceConfig(queueName)))
+	is.NoErr(s.Open(ctx, nil))
+
+	return s, func() {
+		is.NoErr(s.Teardown(ctx))
+	}
+}
+
+func StartDestination(
+	ctx context.Context,
+	is *is.I,
+	d sdk.Destination,
+	queueName string,
+) (sdk.Destination, func()) {
+	is.NoErr(d.Configure(ctx, DestinationConfig(queueName)))
+	is.NoErr(d.Open(ctx))
+
+	return d, func() {
+		is.NoErr(d.Teardown(ctx))
 	}
 }

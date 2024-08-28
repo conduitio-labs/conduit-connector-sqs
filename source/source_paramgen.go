@@ -29,7 +29,7 @@ func (Config) Parameters() map[string]config.Parameter {
 		},
 		ConfigAwsQueue: {
 			Default:     "",
-			Description: "AWSQueue is the sqs queue name",
+			Description: "QueueName is the sqs queue name",
 			Type:        config.ParameterTypeString,
 			Validations: []config.Validation{
 				config.ValidationRequired{},
@@ -58,7 +58,7 @@ func (Config) Parameters() map[string]config.Parameter {
 			Validations: []config.Validation{},
 		},
 		ConfigAwsVisibilityTimeout: {
-			Default:     "0",
+			Default:     "",
 			Description: "VisibilityTimeout is the duration (in seconds) that the received messages\nare hidden from subsequent reads after being retrieved.",
 			Type:        config.ParameterTypeInt,
 			Validations: []config.Validation{},

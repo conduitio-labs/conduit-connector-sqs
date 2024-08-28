@@ -21,7 +21,10 @@ import "github.com/conduitio-labs/conduit-connector-sqs/common"
 type Config struct {
 	common.Config
 
+	// QueueName is the sqs queue name
+	QueueName string `json:"aws.queue" default:"{{ index .Metadata \"opencdc.collection\" }}"`
+
 	// MessageDelay represents the length of time, in seconds, for which a
 	// specific message is delayed
-	MessageDelay int32 `json:"aws.delayTime" default:"0"`
+	MessageDelay int32 `json:"aws.delayTime"`
 }

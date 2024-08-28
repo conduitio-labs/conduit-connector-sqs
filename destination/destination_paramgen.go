@@ -27,18 +27,16 @@ func (Config) Parameters() map[string]config.Parameter {
 			},
 		},
 		ConfigAwsDelayTime: {
-			Default:     "0",
+			Default:     "",
 			Description: "MessageDelay represents the length of time, in seconds, for which a\nspecific message is delayed",
 			Type:        config.ParameterTypeInt,
 			Validations: []config.Validation{},
 		},
 		ConfigAwsQueue: {
-			Default:     "",
-			Description: "AWSQueue is the sqs queue name",
+			Default:     "{{ index .Metadata \"opencdc.collection\" }}",
+			Description: "QueueName is the sqs queue name",
 			Type:        config.ParameterTypeString,
-			Validations: []config.Validation{
-				config.ValidationRequired{},
-			},
+			Validations: []config.Validation{},
 		},
 		ConfigAwsRegion: {
 			Default:     "",

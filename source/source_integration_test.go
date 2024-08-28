@@ -28,14 +28,14 @@ import (
 func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	is := is.New(t)
 	ctx := testutils.TestContext(t)
-	source := NewSource()
-	defer func() { is.NoErr(source.Teardown(ctx)) }()
 
 	testClient, cleanTestClient := testutils.NewSQSClient(ctx, is)
 	defer cleanTestClient()
 
 	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
-	cfg := testutils.SourceConfig(testQueue.Name)
+
+	source, cleanSource := testutils.StartSource(ctx, is, NewSource(), testQueue.Name)
+	defer cleanSource()
 
 	messageBody := "Test message body"
 	_, err := testClient.SendMessage(
@@ -45,12 +45,6 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 			QueueUrl:    testQueue.URL,
 		},
 	)
-	is.NoErr(err)
-
-	err = source.Configure(ctx, cfg)
-	is.NoErr(err)
-
-	err = source.Open(ctx, nil)
 	is.NoErr(err)
 
 	record, err := source.Read(ctx)
