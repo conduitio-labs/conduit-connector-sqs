@@ -23,6 +23,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	"github.com/conduitio/conduit-commons/config"
+	"github.com/conduitio/conduit-commons/lang"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
@@ -39,9 +40,18 @@ type Source struct {
 }
 
 func NewSource() sdk.Source {
-	return sdk.SourceWithMiddleware(&Source{
-		httpClient: &http.Client{},
-	}, sdk.DefaultSourceMiddleware()...)
+	return sdk.SourceWithMiddleware(
+		&Source{
+			httpClient: &http.Client{},
+		},
+		sdk.DefaultSourceMiddleware(
+			// disable schema extraction by default, because the source produces raw data
+			sdk.SourceWithSchemaExtractionConfig{
+				PayloadEnabled: lang.Ptr(false),
+				KeyEnabled:     lang.Ptr(false),
+			},
+		)...,
+	)
 }
 
 func (s *Source) Parameters() config.Parameters {

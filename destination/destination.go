@@ -46,9 +46,12 @@ type Destination struct {
 }
 
 func NewDestination() sdk.Destination {
-	return sdk.DestinationWithMiddleware(&Destination{
-		httpClient: &http.Client{},
-	}, sdk.DefaultDestinationMiddleware()...)
+	return sdk.DestinationWithMiddleware(
+		&Destination{
+			httpClient: &http.Client{},
+		},
+		sdk.DefaultDestinationMiddleware()...,
+	)
 }
 
 func (d *Destination) Parameters() config.Parameters {
