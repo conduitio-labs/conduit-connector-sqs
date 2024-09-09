@@ -36,6 +36,9 @@ type Source struct {
 	queueURL      string
 	savedMessages *savedMessages
 
+	// receiveMessageCalled will be called each time the `ReceiveMessage` method
+	// from the SQS client is called. This is useful in tests only; in non-test
+	// environments, calling this should have no side effects.
 	receiveMessageCalled func()
 
 	// httpClient allows us to cleanup left over http connections. Useful to not
