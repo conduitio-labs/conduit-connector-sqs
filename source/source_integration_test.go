@@ -150,11 +150,17 @@ func TestMultipleMessageFetch(t *testing.T) {
 	recs := make([]opencdc.Record, totalMessages)
 	var wg sync.WaitGroup
 	for i := range totalMessages {
-		rec, err := source.Read(ctx)
-		is.NoErr(err)
-		is.NoErr(source.Ack(ctx, rec.Position))
+		wg.Add(1)
 
-		recs[i] = rec
+		// try concurrent reads so that we can trigger possible dataraces using the "-race" test flag
+		go func() {
+			rec, err := source.Read(ctx)
+			is.NoErr(err)
+			is.NoErr(source.Ack(ctx, rec.Position))
+			recs[i] = rec
+
+			wg.Done()
+		}()
 	}
 
 	wg.Wait()

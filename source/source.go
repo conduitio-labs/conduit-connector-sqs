@@ -69,11 +69,11 @@ func (s *savedMessages) nextSavedMessage() (msg types.Message, ok bool) {
 	return msg, true
 }
 
-func (s *savedMessages) setMessages(msgs []types.Message) {
+func (s *savedMessages) addMessages(msgs []types.Message) {
 	s.mx.Lock()
 	defer s.mx.Unlock()
 
-	s.messages = msgs
+	s.messages = append(s.messages, msgs...)
 }
 
 // newSource initializes a source without any middlewares. Useful for integration test setup.
@@ -181,7 +181,7 @@ func (s *Source) receiveMessage(ctx context.Context) (msg types.Message, err err
 		return sqsMessages.Messages[0], nil
 	}
 
-	s.savedMessages.setMessages(sqsMessages.Messages)
+	s.savedMessages.addMessages(sqsMessages.Messages)
 	msg, _ = s.savedMessages.nextSavedMessage()
 	return msg, nil
 }
