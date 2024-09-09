@@ -15,15 +15,34 @@
 package source
 
 import (
+	"context"
+	"fmt"
+	"sort"
+	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
+	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/matryer/is"
 )
+
+func sendMessage(ctx context.Context, is *is.I, client *sqs.Client, queueURL, msg *string) {
+	is.Helper()
+	_, err := client.SendMessage(
+		ctx,
+		&sqs.SendMessageInput{
+			MessageBody: msg,
+			QueueUrl:    queueURL,
+		},
+	)
+	is.NoErr(err)
+}
 
 func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	is := is.New(t)
@@ -38,14 +57,7 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	defer cleanSource()
 
 	messageBody := "Test message body"
-	_, err := testClient.SendMessage(
-		ctx,
-		&sqs.SendMessageInput{
-			MessageBody: &messageBody,
-			QueueUrl:    testQueue.URL,
-		},
-	)
-	is.NoErr(err)
+	sendMessage(ctx, is, testClient, testQueue.URL, &messageBody)
 
 	record, err := source.Read(ctx)
 	is.NoErr(err)
@@ -100,4 +112,72 @@ func TestSource_OpenWithPosition(t *testing.T) {
 			"the old position contains a different queue name than the connector configuration",
 		))
 	}
+}
+
+func TestMultipleMessageFetch(t *testing.T) {
+	is := is.New(t)
+	ctx := testutils.TestContext(t)
+
+	testClient, cleanTestClient := testutils.NewSQSClient(ctx, is)
+	defer cleanTestClient()
+
+	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
+
+	totalMessages := 20
+	maxNumberOfMessages := 5
+
+	var expectedMessages []string
+	for i := range totalMessages {
+		msg := fmt.Sprint("message ", i)
+		sendMessage(ctx, is, testClient, testQueue.URL, &msg)
+		expectedMessages = append(expectedMessages, msg)
+	}
+
+	var receiveMessageCalls int64
+
+	source := newSource()
+	source.receiveMessageCalled = func() {
+		atomic.AddInt64(&receiveMessageCalls, 1)
+	}
+
+	cfg := testutils.SourceConfig(testQueue.Name)
+	cfg[ConfigAwsMaxNumberOfMessages] = fmt.Sprint(maxNumberOfMessages)
+
+	is.NoErr(source.Configure(ctx, cfg))
+	is.NoErr(source.Open(ctx, nil))
+	defer func() { is.NoErr(source.Teardown(ctx)) }()
+
+	recs := make([]opencdc.Record, totalMessages)
+	var wg sync.WaitGroup
+	for i := range totalMessages {
+		rec, err := source.Read(ctx)
+		is.NoErr(err)
+		is.NoErr(source.Ack(ctx, rec.Position))
+
+		recs[i] = rec
+	}
+
+	wg.Wait()
+
+	// records might come unsorted
+	sort.Slice(recs, func(i, j int) bool {
+		prev := string(recs[i].Payload.After.Bytes())[len("message "):]
+		next := string(recs[j].Payload.After.Bytes())[len("message "):]
+		prevInt, err := strconv.Atoi(prev)
+		is.NoErr(err)
+		nextInt, err := strconv.Atoi(next)
+		is.NoErr(err)
+
+		return prevInt < nextInt
+	})
+
+	// assert record contents
+	for i := range recs {
+		expected := expectedMessages[i]
+		actual := string(recs[i].Payload.After.Bytes())
+
+		is.Equal(expected, actual)
+	}
+
+	is.Equal(receiveMessageCalls, int64(totalMessages/maxNumberOfMessages))
 }
