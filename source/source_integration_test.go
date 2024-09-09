@@ -16,6 +16,7 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -23,6 +24,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
@@ -154,9 +156,24 @@ func TestMultipleMessageFetch(t *testing.T) {
 
 		// try concurrent reads so that we can trigger possible dataraces using the "-race" test flag
 		go func() {
+		retry:
 			rec, err := source.Read(ctx)
+			if errors.Is(err, sdk.ErrBackoffRetry) {
+				// backoff retry errors are expected if we try to read the source
+				// concurrently. We discard these calls, we only want to measure the
+				// calls that did return messages
+				atomic.AddInt64(&receiveMessageCalls, -1)
+
+				// be a bit easy with slow ci machine
+				time.Sleep(200 * time.Millisecond)
+				goto retry
+			}
+
 			is.NoErr(err)
 			is.NoErr(source.Ack(ctx, rec.Position))
+
+			// This is racy, but `recs` reads are carefully done later after goroutines
+			// done, and this simplifies test considerably.
 			recs[i] = rec
 
 			wg.Done()

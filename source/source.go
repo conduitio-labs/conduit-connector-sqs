@@ -181,6 +181,9 @@ func (s *Source) receiveMessage(ctx context.Context) (msg types.Message, err err
 		return sqsMessages.Messages[0], nil
 	}
 
+	// While we wait for ReceiveMessage to return, another concurrent `source.Read`
+	// call that finishes earlier will also try to add messages to the cache. If we
+	// append them we don't lose any messages.
 	s.savedMessages.addMessages(sqsMessages.Messages)
 	msg, _ = s.savedMessages.nextSavedMessage()
 	return msg, nil
