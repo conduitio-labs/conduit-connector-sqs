@@ -172,15 +172,16 @@ func (s *Source) receiveMessage(ctx context.Context) (msg types.Message, err err
 	if err != nil {
 		return msg, fmt.Errorf("error retrieving amazon sqs messages: %w", err)
 	}
+	if len(sqsMessages.Messages) == 0 {
+		sdk.Logger(ctx).Warn().Msg("got 0 messages from queue")
+		return msg, sdk.ErrBackoffRetry
+	}
+
 	if s.receiveMessageCalled != nil {
 		s.receiveMessageCalled()
 	}
 
-	switch len(sqsMessages.Messages) {
-	case 0:
-		sdk.Logger(ctx).Warn().Msg("got 0 messages from queue")
-		return msg, sdk.ErrBackoffRetry
-	case 1:
+	if len(sqsMessages.Messages) == 1 {
 		return sqsMessages.Messages[0], nil
 	}
 
