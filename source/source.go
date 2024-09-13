@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
@@ -34,7 +33,7 @@ type Source struct {
 	config        Config
 	svc           *sqs.Client
 	queueURL      string
-	savedMessages *savedMessages
+	savedMessages []types.Message
 
 	// receiveMessageCalled will be called each time the `ReceiveMessage` method
 	// from the SQS client is called. This is useful in tests only; in non-test
@@ -46,44 +45,10 @@ type Source struct {
 	httpClient *http.Client
 }
 
-type savedMessages struct {
-	mx       *sync.Mutex
-	messages []types.Message
-}
-
-func newSavedMessages() *savedMessages {
-	return &savedMessages{
-		mx:       &sync.Mutex{},
-		messages: []types.Message{},
-	}
-}
-
-func (s *savedMessages) nextSavedMessage() (msg types.Message, ok bool) {
-	s.mx.Lock()
-	defer s.mx.Unlock()
-
-	if len(s.messages) == 0 {
-		return msg, false
-	}
-
-	msg = s.messages[0]
-	s.messages = s.messages[1:]
-
-	return msg, true
-}
-
-func (s *savedMessages) addMessages(msgs []types.Message) {
-	s.mx.Lock()
-	defer s.mx.Unlock()
-
-	s.messages = append(s.messages, msgs...)
-}
-
 // newSource initializes a source without any middlewares. Useful for integration test setup.
 func newSource() *Source {
 	return &Source{
-		savedMessages: newSavedMessages(),
-		httpClient:    &http.Client{},
+		httpClient: &http.Client{},
 	}
 }
 
@@ -154,8 +119,10 @@ func (s *Source) Open(ctx context.Context, sdkPos opencdc.Position) (err error) 
 }
 
 func (s *Source) receiveMessage(ctx context.Context) (msg types.Message, err error) {
-	if msg, ok := s.savedMessages.nextSavedMessage(); ok {
-		return msg, nil
+	if len(s.savedMessages) >= 1 {
+		first := s.savedMessages[0]
+		s.savedMessages = s.savedMessages[1:]
+		return first, nil
 	}
 
 	receiveMessage := &sqs.ReceiveMessageInput{
@@ -172,24 +139,21 @@ func (s *Source) receiveMessage(ctx context.Context) (msg types.Message, err err
 	if err != nil {
 		return msg, fmt.Errorf("error retrieving amazon sqs messages: %w", err)
 	}
+	if s.receiveMessageCalled != nil {
+		s.receiveMessageCalled()
+	}
+
 	if len(sqsMessages.Messages) == 0 {
 		sdk.Logger(ctx).Warn().Msg("got 0 messages from queue")
 		return msg, sdk.ErrBackoffRetry
 	}
 
-	if s.receiveMessageCalled != nil {
-		s.receiveMessageCalled()
-	}
-
+	msg = sqsMessages.Messages[0]
 	if len(sqsMessages.Messages) == 1 {
-		return sqsMessages.Messages[0], nil
+		return msg, nil
 	}
 
-	// While we wait for ReceiveMessage to return, another concurrent `source.Read`
-	// call that finishes earlier will also try to add messages to the cache. If we
-	// append them we don't lose any messages.
-	s.savedMessages.addMessages(sqsMessages.Messages)
-	msg, _ = s.savedMessages.nextSavedMessage()
+	s.savedMessages = sqsMessages.Messages[1:]
 	return msg, nil
 }
 

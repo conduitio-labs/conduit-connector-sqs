@@ -16,12 +16,10 @@ package source
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
@@ -115,104 +113,64 @@ func TestSource_OpenWithPosition(t *testing.T) {
 }
 
 func TestMultipleMessageFetch(t *testing.T) {
-	runTest := func(t *testing.T, concurrent bool) {
-		is := is.New(t)
-		ctx := testutils.TestContext(t)
+	is := is.New(t)
+	ctx := testutils.TestContext(t)
 
-		testClient, cleanTestClient := testutils.NewSQSClient(ctx, is)
-		defer cleanTestClient()
+	testClient, cleanTestClient := testutils.NewSQSClient(ctx, is)
+	defer cleanTestClient()
 
-		testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
+	testQueue := testutils.CreateTestQueue(ctx, t, is, testClient)
 
-		totalMessages := 20
-		maxNumberOfMessages := 5
+	totalMessages := 20
+	maxNumberOfMessages := 5
 
-		expectedMessages := make([]string, totalMessages)
-		for i := range totalMessages {
-			msg := fmt.Sprintf("message %d", i)
-			sendMessage(ctx, is, testClient, testQueue.URL, &msg)
-			expectedMessages[i] = msg
-		}
-
-		source := newSource()
-		var receiveMessageCalls int
-
-		if !concurrent {
-			source.receiveMessageCalled = func() {
-				receiveMessageCalls++
-			}
-		}
-
-		cfg := testutils.SourceConfig(testQueue.Name)
-		cfg[ConfigAwsVisibilityTimeout] = "10"
-		cfg[ConfigAwsMaxNumberOfMessages] = fmt.Sprint(maxNumberOfMessages)
-
-		is.NoErr(source.Configure(ctx, cfg))
-		is.NoErr(source.Open(ctx, nil))
-		defer func() { is.NoErr(source.Teardown(ctx)) }()
-
-		recs := make([]opencdc.Record, totalMessages)
-		if concurrent {
-			var wg sync.WaitGroup
-
-			for i := range totalMessages {
-				wg.Add(1)
-				readFunc := func(i int) {
-					defer wg.Done()
-				retry:
-					rec, err := source.Read(ctx)
-					if errors.Is(err, sdk.ErrBackoffRetry) {
-						goto retry
-					}
-					is.NoErr(err)
-
-					is.NoErr(source.Ack(ctx, rec.Position))
-					recs[i] = rec
-				}
-
-				go readFunc(i)
-			}
-
-			wg.Wait()
-		} else {
-			for i := range totalMessages {
-				rec, err := source.Read(ctx)
-				is.NoErr(err)
-				is.NoErr(source.Ack(ctx, rec.Position))
-				recs[i] = rec
-			}
-		}
-
-		// records might come unsorted
-		sort.Slice(recs, func(i, j int) bool {
-			prevInt, _ := strconv.Atoi(string(recs[i].Payload.After.Bytes())[len("message "):])
-			nextInt, _ := strconv.Atoi(string(recs[j].Payload.After.Bytes())[len("message "):])
-			return prevInt < nextInt
-		})
-
-		// assert record contents
-		for i := range recs {
-			expected := expectedMessages[i]
-			actual := string(recs[i].Payload.After.Bytes())
-
-			is.Equal(expected, actual)
-		}
-
-		if !concurrent {
-			is.Equal(
-				totalMessages/maxNumberOfMessages,
-				receiveMessageCalls,
-			) // expected receive calls != actual receive calls made
-		}
+	expectedMessages := make([]string, totalMessages)
+	for i := range totalMessages {
+		msg := fmt.Sprintf("message %d", i)
+		sendMessage(ctx, is, testClient, testQueue.URL, &msg)
+		expectedMessages[i] = msg
 	}
 
-	t.Run("assert writes in batches", func(t *testing.T) {
-		runTest(t, false)
+	source := newSource()
+	var receiveMessageCalls int
+
+	source.receiveMessageCalled = func() {
+		receiveMessageCalls++
+	}
+
+	cfg := testutils.SourceConfig(testQueue.Name)
+	cfg[ConfigAwsVisibilityTimeout] = "10"
+	cfg[ConfigAwsMaxNumberOfMessages] = fmt.Sprint(maxNumberOfMessages)
+
+	is.NoErr(source.Configure(ctx, cfg))
+	is.NoErr(source.Open(ctx, nil))
+	defer func() { is.NoErr(source.Teardown(ctx)) }()
+
+	recs := make([]opencdc.Record, totalMessages)
+	for i := range totalMessages {
+		rec, err := source.Read(ctx)
+		is.NoErr(err)
+		is.NoErr(source.Ack(ctx, rec.Position))
+		recs[i] = rec
+	}
+
+	// records might come unsorted
+	sort.Slice(recs, func(i, j int) bool {
+		prevInt, _ := strconv.Atoi(string(recs[i].Payload.After.Bytes())[len("message "):])
+		nextInt, _ := strconv.Atoi(string(recs[j].Payload.After.Bytes())[len("message "):])
+		return prevInt < nextInt
 	})
 
-	// tries concurrent reads so that we can trigger possible dataraces using
-	// the "-race" test flag
-	t.Run("assert no dataraces", func(t *testing.T) {
-		runTest(t, true)
-	})
+	// assert record contents
+	for i := range recs {
+		expected := expectedMessages[i]
+		actual := string(recs[i].Payload.After.Bytes())
+
+		is.Equal(expected, actual)
+	}
+
+	is.Equal(
+		totalMessages/maxNumberOfMessages,
+		receiveMessageCalls,
+	) // expected receive calls != actual receive calls made
 }
