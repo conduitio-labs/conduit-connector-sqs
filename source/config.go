@@ -32,6 +32,6 @@ type Config struct {
 	// a message to arrive in the queue before returning.
 	WaitTimeSeconds int32 `json:"aws.waitTimeSeconds" default:"10"`
 
-	// MaxNumberOfMessages is the maximum number of messages to return in a single batch.
+	// MaxNumberOfMessages is the maximum number of messages to fetch from SQS in a single batch.
 	MaxNumberOfMessages int32 `json:"aws.maxNumberOfMessages" default:"1" validate:"gt=0,lt=11"`
 }

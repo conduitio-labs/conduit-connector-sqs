@@ -30,7 +30,7 @@ func (Config) Parameters() map[string]config.Parameter {
 		},
 		ConfigAwsMaxNumberOfMessages: {
 			Default:     "1",
-			Description: "MaxNumberOfMessages is the maximum number of messages to return in a single batch.",
+			Description: "MaxNumberOfMessages is the maximum number of messages to fetch from SQS in a single batch.",
 			Type:        config.ParameterTypeInt,
 			Validations: []config.Validation{
 				config.ValidationGreaterThan{V: 0},
