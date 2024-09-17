@@ -20,15 +20,16 @@ Queue.
 
 The configuration passed to `Configure` can contain the following fields:
 
-| name                    | description                                                                                                  | required | default value |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------ | -------- | ------------- |
-| `aws.accessKeyId`       | AWS Access Key ID                                                                                            | yes      |               |
-| `aws.secretAccessKey`   | AWS Secret Access Key                                                                                        | yes      |               |
-| `aws.region`            | AWS SQS Region                                                                                               | yes      |               |
-| `aws.queue`             | AWS SQS Queue Name                                                                                           | yes      |               |
-| `aws.visibilityTimeout` | The duration (in seconds) that the received messages are hidden from subsequent reads after being retrieved. | no       | 0             |
-| `aws.waitTimeSeconds`   | the duration (in seconds) for which the call waits for a message to arrive in the queue before returning.    | no       | 10            |
-| `aws.url`               | URL for AWS (internal use only)                                                                              | no       |               |
+| name                      | description                                                                                                  | required | default value |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ | -------- | ------------- |
+| `aws.accessKeyId`         | AWS Access Key ID                                                                                            | yes      |               |
+| `aws.secretAccessKey`     | AWS Secret Access Key                                                                                        | yes      |               |
+| `aws.region`              | AWS SQS Region                                                                                               | yes      |               |
+| `aws.queue`               | AWS SQS Queue Name                                                                                           | yes      |               |
+| `aws.visibilityTimeout`   | The duration (in seconds) that the received messages are hidden from subsequent reads after being retrieved. | no       | 0             |
+| `aws.waitTimeSeconds`     | The duration (in seconds) for which the call waits for a message to arrive in the queue before returning.    | no       | 10            |
+| `aws.maxNumberOfMessages` | The maximum number of messages to fetch from SQS in a single batch.                                          | no       | 1             |
+| `aws.url`                 | URL for AWS (internal use only)                                                                              | no       |               |
 
 ## Destination
 

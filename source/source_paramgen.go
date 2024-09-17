@@ -8,13 +8,14 @@ import (
 )
 
 const (
-	ConfigAwsAccessKeyId       = "aws.accessKeyId"
-	ConfigAwsQueue             = "aws.queue"
-	ConfigAwsRegion            = "aws.region"
-	ConfigAwsSecretAccessKey   = "aws.secretAccessKey"
-	ConfigAwsUrl               = "aws.url"
-	ConfigAwsVisibilityTimeout = "aws.visibilityTimeout"
-	ConfigAwsWaitTimeSeconds   = "aws.waitTimeSeconds"
+	ConfigAwsAccessKeyId         = "aws.accessKeyId"
+	ConfigAwsMaxNumberOfMessages = "aws.maxNumberOfMessages"
+	ConfigAwsQueue               = "aws.queue"
+	ConfigAwsRegion              = "aws.region"
+	ConfigAwsSecretAccessKey     = "aws.secretAccessKey"
+	ConfigAwsUrl                 = "aws.url"
+	ConfigAwsVisibilityTimeout   = "aws.visibilityTimeout"
+	ConfigAwsWaitTimeSeconds     = "aws.waitTimeSeconds"
 )
 
 func (Config) Parameters() map[string]config.Parameter {
@@ -25,6 +26,15 @@ func (Config) Parameters() map[string]config.Parameter {
 			Type:        config.ParameterTypeString,
 			Validations: []config.Validation{
 				config.ValidationRequired{},
+			},
+		},
+		ConfigAwsMaxNumberOfMessages: {
+			Default:     "1",
+			Description: "MaxNumberOfMessages is the maximum number of messages to fetch from SQS in a single batch.",
+			Type:        config.ParameterTypeInt,
+			Validations: []config.Validation{
+				config.ValidationGreaterThan{V: 0},
+				config.ValidationLessThan{V: 11},
 			},
 		},
 		ConfigAwsQueue: {

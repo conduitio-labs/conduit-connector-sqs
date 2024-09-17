@@ -30,20 +30,31 @@ import (
 
 type Source struct {
 	sdk.UnimplementedSource
-	config   Config
-	svc      *sqs.Client
-	queueURL string
+	config        Config
+	svc           *sqs.Client
+	queueURL      string
+	savedMessages []types.Message
+
+	// receiveMessageCalled will be called each time the `ReceiveMessage` method
+	// from the SQS client is called. This is useful in tests only; in non-test
+	// environments, calling this should have no side effects.
+	receiveMessageCalled func()
 
 	// httpClient allows us to cleanup left over http connections. Useful to not
 	// leak goroutines when tearing down the connector
 	httpClient *http.Client
 }
 
+// newSource initializes a source without any middlewares. Useful for integration test setup.
+func newSource() *Source {
+	return &Source{
+		httpClient: &http.Client{},
+	}
+}
+
 func NewSource() sdk.Source {
 	return sdk.SourceWithMiddleware(
-		&Source{
-			httpClient: &http.Client{},
-		},
+		newSource(),
 		sdk.DefaultSourceMiddleware(
 			// disable schema extraction by default, because the source produces raw data
 			sdk.SourceWithSchemaExtractionConfig{
@@ -107,30 +118,50 @@ func (s *Source) Open(ctx context.Context, sdkPos opencdc.Position) (err error) 
 	return nil
 }
 
-func (s *Source) Read(ctx context.Context) (rec opencdc.Record, err error) {
+func (s *Source) receiveMessage(ctx context.Context) (msg types.Message, err error) {
+	if len(s.savedMessages) >= 1 {
+		first := s.savedMessages[0]
+		s.savedMessages = s.savedMessages[1:]
+		return first, nil
+	}
+
 	receiveMessage := &sqs.ReceiveMessageInput{
 		MessageAttributeNames: []string{
 			string(types.QueueAttributeNameAll),
 		},
 		QueueUrl:            &s.queueURL,
-		MaxNumberOfMessages: 1,
+		MaxNumberOfMessages: s.config.MaxNumberOfMessages,
 		VisibilityTimeout:   s.config.VisibilityTimeout,
 		WaitTimeSeconds:     s.config.WaitTimeSeconds,
 	}
 
-	// grab a message from queue
 	sqsMessages, err := s.svc.ReceiveMessage(ctx, receiveMessage)
 	if err != nil {
-		return rec, fmt.Errorf("error retrieving amazon sqs messages: %w", err)
+		return msg, fmt.Errorf("error retrieving amazon sqs messages: %w", err)
+	}
+	if s.receiveMessageCalled != nil {
+		s.receiveMessageCalled()
 	}
 
-	// if there are no messages in queue, backoff
 	if len(sqsMessages.Messages) == 0 {
 		sdk.Logger(ctx).Warn().Msg("got 0 messages from queue")
-		return rec, sdk.ErrBackoffRetry
+		return msg, sdk.ErrBackoffRetry
 	}
 
-	message := sqsMessages.Messages[0]
+	msg = sqsMessages.Messages[0]
+	if len(sqsMessages.Messages) == 1 {
+		return msg, nil
+	}
+
+	s.savedMessages = sqsMessages.Messages[1:]
+	return msg, nil
+}
+
+func (s *Source) Read(ctx context.Context) (rec opencdc.Record, err error) {
+	message, err := s.receiveMessage(ctx)
+	if err != nil {
+		return rec, err
+	}
 
 	mt := opencdc.Metadata{}
 	for key, value := range message.MessageAttributes {
