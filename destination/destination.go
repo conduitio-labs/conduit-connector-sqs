@@ -148,7 +148,12 @@ func staticParser(queueName string) queueNameParser {
 }
 
 func parseAlwaysFromCollection(rec opencdc.Record) (string, error) {
-	return rec.Metadata.GetCollection()
+	col, err := rec.Metadata.GetCollection()
+	if err != nil {
+		return "", fmt.Errorf("failed to retrieve collection from record metadata: %w", err)
+	}
+
+	return col, nil
 }
 
 func parserFromGoTemplate(templateContents string) (queueNameParser, error) {
