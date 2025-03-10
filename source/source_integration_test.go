@@ -68,7 +68,7 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	is.Equal(string(record.Payload.After.Bytes()), messageBody)
 
 	record, err = source.Read(ctx)
-	if errors.Is(err, sdk.ErrBackoffRetry) || record.Metadata != nil {
+	if !errors.Is(err, sdk.ErrBackoffRetry) || record.Metadata != nil {
 		t.Fatalf("expected no records and a signal that there are no more records, got %v %v", record, err)
 	}
 }
