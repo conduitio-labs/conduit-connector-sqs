@@ -39,7 +39,6 @@ linters:
     # - errorlint
     # - exhaustive
     # - exhaustivestruct
-    - exportloopref
     # - forbidigo
     # - forcetypeassert
     # - funlen

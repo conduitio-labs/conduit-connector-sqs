@@ -39,7 +39,7 @@ type Config struct {
 	parseQueueName queueNameParser
 }
 
-func (config *Config) Validate(ctx context.Context) error {
+func (config *Config) Validate(context.Context) error {
 	switch queue := config.QueueName; {
 	case isGoTemplate(queue):
 		parser, err := parserFromGoTemplate(queue)
