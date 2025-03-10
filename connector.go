@@ -12,16 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate conn-sdk-cli specgen
+
 package sqs
 
 import (
 	"github.com/conduitio-labs/conduit-connector-sqs/destination"
 	"github.com/conduitio-labs/conduit-connector-sqs/source"
+	"github.com/conduitio-labs/conduit-connector-sqs/spec"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
 var Connector = sdk.Connector{
-	NewSpecification: Specification,
+	NewSpecification: spec.Spec,
 	NewSource:        source.NewSource,
 	NewDestination:   destination.NewDestination,
 }

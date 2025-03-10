@@ -22,7 +22,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
-	"github.com/conduitio/conduit-commons/config"
 	"github.com/conduitio/conduit-commons/lang"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -45,39 +44,28 @@ type Source struct {
 	httpClient *http.Client
 }
 
+func (s *Source) Config() sdk.SourceConfig {
+	return &s.config
+}
+
 // newSource initializes a source without any middlewares. Useful for integration test setup.
 func newSource() *Source {
 	return &Source{
+		config: Config{
+			DefaultSourceMiddleware: sdk.DefaultSourceMiddleware{
+				SourceWithSchemaExtraction: sdk.SourceWithSchemaExtraction{
+					PayloadEnabled: lang.Ptr(false),
+					KeyEnabled:     lang.Ptr(false),
+				},
+			},
+		},
+
 		httpClient: &http.Client{},
 	}
 }
 
 func NewSource() sdk.Source {
-	return sdk.SourceWithMiddleware(
-		newSource(),
-		sdk.DefaultSourceMiddleware(
-			// disable schema extraction by default, because the source produces raw data
-			sdk.SourceWithSchemaExtractionConfig{
-				PayloadEnabled: lang.Ptr(false),
-				KeyEnabled:     lang.Ptr(false),
-			},
-		)...,
-	)
-}
-
-func (s *Source) Parameters() config.Parameters {
-	return Config{}.Parameters()
-}
-
-func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
-	sdk.Logger(ctx).Debug().Msg("Configuring Source Connector.")
-
-	err := sdk.Util.ParseConfig(ctx, cfg, &s.config, s.Parameters())
-	if err != nil {
-		return fmt.Errorf("failed to parse source config : %w", err)
-	}
-
-	return nil
+	return sdk.SourceWithMiddleware(newSource())
 }
 
 func (s *Source) Open(ctx context.Context, sdkPos opencdc.Position) (err error) {

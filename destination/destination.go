@@ -27,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
-	"github.com/conduitio/conduit-commons/config"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	cmap "github.com/orcaman/concurrent-map/v2"
@@ -35,51 +34,21 @@ import (
 
 type Destination struct {
 	sdk.UnimplementedDestination
-	config         Config
-	svc            *sqs.Client
-	parseQueueName queueNameParser
-	queueURLMap    *queueURLMap
+	config      Config
+	svc         *sqs.Client
+	queueURLMap *queueURLMap
 
 	// httpClient allows us to cleanup left over http connections. Useful to not
 	// leak goroutines when tearing down the connector
 	httpClient *http.Client
 }
 
+func (d *Destination) Config() sdk.DestinationConfig {
+	return &d.config
+}
+
 func NewDestination() sdk.Destination {
-	return sdk.DestinationWithMiddleware(
-		&Destination{
-			httpClient: &http.Client{},
-		},
-		sdk.DefaultDestinationMiddleware()...,
-	)
-}
-
-func (d *Destination) Parameters() config.Parameters {
-	return Config{}.Parameters()
-}
-
-func (d *Destination) Configure(ctx context.Context, cfg config.Config) error {
-	sdk.Logger(ctx).Debug().Msg("Configuring Destination Connector.")
-
-	err := sdk.Util.ParseConfig(ctx, cfg, &d.config, NewDestination().Parameters())
-	if err != nil {
-		return fmt.Errorf("failed to parse destination config : %w", err)
-	}
-
-	switch queue := d.config.QueueName; {
-	case isGoTemplate(queue):
-		parser, err := parserFromGoTemplate(queue)
-		if err != nil {
-			return fmt.Errorf("failed to create template parser: %w", err)
-		}
-		d.parseQueueName = parser
-	case queue != "":
-		d.parseQueueName = staticParser(queue)
-	default:
-		d.parseQueueName = parseAlwaysFromCollection
-	}
-
-	return nil
+	return sdk.DestinationWithMiddleware(&Destination{httpClient: &http.Client{}})
 }
 
 func (d *Destination) Open(ctx context.Context) (err error) {
@@ -230,7 +199,7 @@ type messageBatch struct {
 func (d *Destination) splitIntoBatches(recs []opencdc.Record) ([]messageBatch, error) {
 	var batches []messageBatch
 	for _, rec := range recs {
-		queueName, err := d.parseQueueName(rec)
+		queueName, err := d.config.parseQueueName(rec)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse queue name while batching: %w", err)
 		}

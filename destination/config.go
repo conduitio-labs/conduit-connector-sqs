@@ -14,11 +14,16 @@
 
 package destination
 
-import "github.com/conduitio-labs/conduit-connector-sqs/common"
+import (
+	"context"
+	"fmt"
 
-//go:generate paramgen -output=destination_paramgen.go Config
+	"github.com/conduitio-labs/conduit-connector-sqs/common"
+	sdk "github.com/conduitio/conduit-connector-sdk"
+)
 
 type Config struct {
+	sdk.DefaultDestinationMiddleware
 	common.Config
 
 	// QueueName is the sqs queue name
@@ -30,4 +35,23 @@ type Config struct {
 
 	// BatchSize represents the amount of records written per batch
 	BatchSize int `json:"batchSize" default:"10"`
+
+	parseQueueName queueNameParser
+}
+
+func (config *Config) Validate(ctx context.Context) error {
+	switch queue := config.QueueName; {
+	case isGoTemplate(queue):
+		parser, err := parserFromGoTemplate(queue)
+		if err != nil {
+			return fmt.Errorf("failed to create template parser: %w", err)
+		}
+		config.parseQueueName = parser
+	case queue != "":
+		config.parseQueueName = staticParser(queue)
+	default:
+		config.parseQueueName = parseAlwaysFromCollection
+	}
+
+	return nil
 }
