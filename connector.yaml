@@ -2,7 +2,7 @@ version: "1.0"
 specification:
   name: sqs
   summary: The Amazon SQS plugin for Conduit, written in Go.
-  description: ""
+  description: The Amazon SQS connector allows you to read from and write to Amazon SQS queues. It supports both standard and FIFO queues, with special metadata keys for FIFO queue operations like message grouping and deduplication.
   version: (devel)
   author: Meroxa, Inc.
   source:
