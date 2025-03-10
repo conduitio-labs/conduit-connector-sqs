@@ -21,6 +21,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
+	"github.com/conduitio-labs/conduit-connector-sqs/spec"
 	"github.com/conduitio/conduit-commons/config"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
@@ -135,7 +136,9 @@ func DestinationConfig(queueName string) config.Config {
 }
 
 func StartSource(ctx context.Context, is *is.I, s sdk.Source, queueName string) (sdk.Source, func()) {
-	is.NoErr(s.Configure(ctx, SourceConfig(queueName)))
+	err := sdk.Util.ParseConfig(ctx, SourceConfig(queueName), s.Config(), spec.Spec().SourceParams)
+	is.NoErr(err)
+
 	is.NoErr(s.Open(ctx, nil))
 
 	return s, func() {
@@ -144,12 +147,10 @@ func StartSource(ctx context.Context, is *is.I, s sdk.Source, queueName string) 
 }
 
 func StartDestination(
-	ctx context.Context,
-	is *is.I,
-	d sdk.Destination,
-	queueName string,
+	ctx context.Context, is *is.I, d sdk.Destination, queueName string,
 ) (sdk.Destination, func()) {
-	is.NoErr(d.Configure(ctx, DestinationConfig(queueName)))
+	err := sdk.Util.ParseConfig(ctx, DestinationConfig(queueName), d.Config(), spec.Spec().DestinationParams)
+	is.NoErr(err)
 	is.NoErr(d.Open(ctx))
 
 	return d, func() {

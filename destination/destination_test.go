@@ -39,7 +39,7 @@ func TestSplitIntoBatches_Empty(t *testing.T) {
 	recs := []opencdc.Record{}
 
 	dest := &Destination{
-		parseQueueName: parseFromCollection(is),
+		config: Config{parseQueueName: parseFromCollection(is)},
 	}
 
 	batches, err := dest.splitIntoBatches(recs)
@@ -59,7 +59,7 @@ func TestSplitIntoBatches_MultipleBatches(t *testing.T) {
 	}
 
 	dest := &Destination{
-		parseQueueName: parseFromCollection(is),
+		config: Config{parseQueueName: parseFromCollection(is)},
 	}
 
 	batches, err := dest.splitIntoBatches(recs)

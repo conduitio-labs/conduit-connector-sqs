@@ -16,6 +16,7 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/conduitio-labs/conduit-connector-sqs/common"
+	"github.com/conduitio-labs/conduit-connector-sqs/spec"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -66,7 +68,7 @@ func TestSource_SuccessfulMessageReceive(t *testing.T) {
 	is.Equal(string(record.Payload.After.Bytes()), messageBody)
 
 	record, err = source.Read(ctx)
-	if err != sdk.ErrBackoffRetry || record.Metadata != nil {
+	if !errors.Is(err, sdk.ErrBackoffRetry) || record.Metadata != nil {
 		t.Fatalf("expected no records and a signal that there are no more records, got %v %v", record, err)
 	}
 }
@@ -82,7 +84,8 @@ func TestSource_OpenWithPosition(t *testing.T) {
 	cfg := testutils.SourceConfig(testQueue.Name)
 	{
 		source := NewSource()
-		is.NoErr(source.Configure(ctx, cfg))
+		err := sdk.Util.ParseConfig(ctx, cfg, source.Config(), spec.Spec().SourceParams)
+		is.NoErr(err)
 
 		pos := common.Position{
 			ReceiptHandle: "test-handle",
@@ -93,14 +96,15 @@ func TestSource_OpenWithPosition(t *testing.T) {
 	}
 	{
 		source := NewSource()
-		is.NoErr(source.Configure(ctx, cfg))
+		err := sdk.Util.ParseConfig(ctx, cfg, source.Config(), spec.Spec().SourceParams)
+		is.NoErr(err)
 
 		pos := common.Position{
 			ReceiptHandle: "test-handle",
 			QueueName:     "other-test-queue",
 		}
 
-		err := source.Open(ctx, pos.ToSdkPosition())
+		err = source.Open(ctx, pos.ToSdkPosition())
 		if err == nil {
 			is.Fail() // expected error on wrong position
 		}
@@ -139,10 +143,11 @@ func TestMultipleMessageFetch(t *testing.T) {
 	}
 
 	cfg := testutils.SourceConfig(testQueue.Name)
-	cfg[ConfigAwsVisibilityTimeout] = "10"
-	cfg[ConfigAwsMaxNumberOfMessages] = fmt.Sprint(maxNumberOfMessages)
+	cfg["aws.visibilityTimeout"] = "10"
+	cfg["aws.maxNumberOfMessages"] = fmt.Sprint(maxNumberOfMessages)
 
-	is.NoErr(source.Configure(ctx, cfg))
+	err := sdk.Util.ParseConfig(ctx, cfg, source.Config(), spec.Spec().SourceParams)
+	is.NoErr(err)
 	is.NoErr(source.Open(ctx, nil))
 	defer func() { is.NoErr(source.Teardown(ctx)) }()
 

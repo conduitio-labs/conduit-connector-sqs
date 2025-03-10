@@ -16,6 +16,7 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/conduitio/conduit-commons/opencdc"
 )
@@ -27,8 +28,10 @@ type Position struct {
 
 func ParsePosition(sdkPosition opencdc.Position) (Position, error) {
 	var position Position
-	err := json.Unmarshal(sdkPosition, &position)
-	return position, err
+	if err := json.Unmarshal(sdkPosition, &position); err != nil {
+		return position, fmt.Errorf("failed to parse position: %w", err)
+	}
+	return position, nil
 }
 
 func (p Position) ToSdkPosition() opencdc.Position {

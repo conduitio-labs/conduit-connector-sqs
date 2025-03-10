@@ -22,6 +22,7 @@ import (
 
 	"github.com/conduitio-labs/conduit-connector-sqs/destination"
 	"github.com/conduitio-labs/conduit-connector-sqs/source"
+	"github.com/conduitio-labs/conduit-connector-sqs/spec"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -105,7 +106,9 @@ func (testCase multicollectionTestCase) eval(ctx context.Context, is *is.I) {
 	source := source.NewSource()
 	cfg := testutils.SourceConfig(testCase.QueueName)
 
-	is.NoErr(source.Configure(ctx, cfg))
+	err := sdk.Util.ParseConfig(ctx, cfg, source.Config(), spec.Spec().SourceParams)
+	is.NoErr(err)
+
 	is.NoErr(source.Open(ctx, nil))
 
 	for _, expectedRec := range testCase.ExpectedRecords {

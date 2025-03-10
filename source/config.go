@@ -14,11 +14,14 @@
 
 package source
 
-import "github.com/conduitio-labs/conduit-connector-sqs/common"
-
-//go:generate paramgen -output=source_paramgen.go Config
+import (
+	"github.com/conduitio-labs/conduit-connector-sqs/common"
+	sdk "github.com/conduitio/conduit-connector-sdk"
+)
 
 type Config struct {
+	sdk.DefaultSourceMiddleware
+
 	common.Config
 
 	// QueueName is the sqs queue name

@@ -19,8 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/conduitio-labs/conduit-connector-sqs/destination"
-	"github.com/conduitio-labs/conduit-connector-sqs/source"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -50,8 +48,8 @@ func TestAcceptance(t *testing.T) {
 				defer closeTestClient()
 
 				queue := testutils.CreateTestQueue(ctx, t, is, testClient)
-				srcCfg[source.ConfigAwsQueue] = queue.Name
-				destCfg[destination.ConfigAwsQueue] = queue.Name
+				srcCfg["aws.queue"] = queue.Name
+				destCfg["aws.queue"] = queue.Name
 			},
 			Skip: []string{
 				// This test is not compatible with how sqs works. When trying to

@@ -18,6 +18,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/conduitio-labs/conduit-connector-sqs/spec"
 	testutils "github.com/conduitio-labs/conduit-connector-sqs/test"
 	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -46,7 +47,7 @@ func TestDestination_FailBadRecord(t *testing.T) {
 		opencdc.RawData(messageBody),
 	)
 
-	err := destination.Configure(ctx, cfg)
+	err := sdk.Util.ParseConfig(ctx, cfg, destination.Config(), spec.Spec().DestinationParams)
 	is.NoErr(err)
 
 	err = destination.Open(ctx)
@@ -65,7 +66,7 @@ func TestDestination_FailNonExistentQueue(t *testing.T) {
 
 	cfg := testutils.DestinationConfig("nonexistent-testqueue")
 
-	err := destination.Configure(ctx, cfg)
+	err := sdk.Util.ParseConfig(ctx, cfg, destination.Config(), spec.Spec().DestinationParams)
 	is.NoErr(err)
 
 	err = destination.Open(ctx)
