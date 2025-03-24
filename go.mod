@@ -15,7 +15,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/matryer/is v1.4.1
 	github.com/orcaman/concurrent-map/v2 v2.0.1
-	github.com/rs/zerolog v1.33.0
+	github.com/rs/zerolog v1.34.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.5.0
 )
