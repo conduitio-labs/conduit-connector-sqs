@@ -15,12 +15,12 @@
 package common
 
 type Config struct {
-	// AWSAccessKeyID is the amazon access key id
+	// The amazon access key id
 	AWSAccessKeyID string `json:"aws.accessKeyId" validate:"required"`
-	// AWSSecretAccessKey is the amazon secret access key
+	// The amazon secret access key
 	AWSSecretAccessKey string `json:"aws.secretAccessKey" validate:"required"`
-	// AWSRegion is the amazon sqs region
+	// The amazon sqs region
 	AWSRegion string `json:"aws.region" validate:"required"`
-	// AWSURL is the URL for AWS (internal use only).
+	// The URL for AWS (internal use only).
 	AWSURL string `json:"aws.url"`
 }

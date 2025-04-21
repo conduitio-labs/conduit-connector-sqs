@@ -8,35 +8,35 @@ specification:
   source:
     parameters:
       - name: aws.accessKeyId
-        description: AWSAccessKeyID is the amazon access key id
+        description: The amazon access key id
         type: string
         default: ""
         validations:
           - type: required
             value: ""
       - name: aws.queue
-        description: QueueName is the sqs queue name
+        description: The sqs queue name
         type: string
         default: ""
         validations:
           - type: required
             value: ""
       - name: aws.region
-        description: AWSRegion is the amazon sqs region
+        description: The amazon sqs region
         type: string
         default: ""
         validations:
           - type: required
             value: ""
       - name: aws.secretAccessKey
-        description: AWSSecretAccessKey is the amazon secret access key
+        description: The amazon secret access key
         type: string
         default: ""
         validations:
           - type: required
             value: ""
       - name: aws.maxNumberOfMessages
-        description: MaxNumberOfMessages is the maximum number of messages to fetch from SQS in a single batch.
+        description: The maximum number of messages to fetch from SQS in a single batch.
         type: int
         default: "1"
         validations:
@@ -45,20 +45,20 @@ specification:
           - type: less-than
             value: "11"
       - name: aws.url
-        description: AWSURL is the URL for AWS (internal use only).
+        description: The URL for AWS (internal use only).
         type: string
         default: ""
         validations: []
       - name: aws.visibilityTimeout
         description: |-
-          VisibilityTimeout is the duration (in seconds) that the received messages
+          The duration (in seconds) that the received messages
           are hidden from subsequent reads after being retrieved.
         type: int
         default: ""
         validations: []
       - name: aws.waitTimeSeconds
         description: |-
-          WaitTimeSeconds is the duration (in seconds) for which the call waits for
+          The duration (in seconds) for which the call waits for
           a message to arrive in the queue before returning.
         type: int
         default: "10"
@@ -126,45 +126,43 @@ specification:
   destination:
     parameters:
       - name: aws.accessKeyId
-        description: AWSAccessKeyID is the amazon access key id
+        description: The amazon access key id
         type: string
         default: ""
         validations:
           - type: required
             value: ""
       - name: aws.region
-        description: AWSRegion is the amazon sqs region
+        description: The amazon sqs region
         type: string
         default: ""
         validations:
           - type: required
             value: ""
       - name: aws.secretAccessKey
-        description: AWSSecretAccessKey is the amazon secret access key
+        description: The amazon secret access key
         type: string
         default: ""
         validations:
           - type: required
             value: ""
       - name: aws.delayTime
-        description: |-
-          MessageDelay represents the length of time, in seconds, for which a
-          specific message is delayed
+        description: The length of time, in seconds, for which a specific message is delayed
         type: int
         default: ""
         validations: []
       - name: aws.queue
-        description: QueueName is the sqs queue name
+        description: The sqs queue name
         type: string
         default: '{{ index .Metadata "opencdc.collection" }}'
         validations: []
       - name: aws.url
-        description: AWSURL is the URL for AWS (internal use only).
+        description: The URL for AWS (internal use only).
         type: string
         default: ""
         validations: []
       - name: batchSize
-        description: BatchSize represents the amount of records written per batch
+        description: The amount of records written per batch
         type: int
         default: "10"
         validations: []

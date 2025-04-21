@@ -24,17 +24,17 @@ type Config struct {
 
 	common.Config
 
-	// QueueName is the sqs queue name
+	// The sqs queue name
 	QueueName string `json:"aws.queue" validate:"required"`
 
-	// VisibilityTimeout is the duration (in seconds) that the received messages
+	// The duration (in seconds) that the received messages
 	// are hidden from subsequent reads after being retrieved.
 	VisibilityTimeout int32 `json:"aws.visibilityTimeout"`
 
-	// WaitTimeSeconds is the duration (in seconds) for which the call waits for
+	// The duration (in seconds) for which the call waits for
 	// a message to arrive in the queue before returning.
 	WaitTimeSeconds int32 `json:"aws.waitTimeSeconds" default:"10"`
 
-	// MaxNumberOfMessages is the maximum number of messages to fetch from SQS in a single batch.
+	// The maximum number of messages to fetch from SQS in a single batch.
 	MaxNumberOfMessages int32 `json:"aws.maxNumberOfMessages" default:"1" validate:"gt=0,lt=11"`
 }

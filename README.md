@@ -28,38 +28,37 @@ pipelines:
       - id: example
         plugin: "sqs"
         settings:
-          # AWSAccessKeyID is the amazon access key id
+          # The amazon access key id
           # Type: string
           # Required: yes
           aws.accessKeyId: ""
-          # QueueName is the sqs queue name
+          # The sqs queue name
           # Type: string
           # Required: yes
           aws.queue: ""
-          # AWSRegion is the amazon sqs region
+          # The amazon sqs region
           # Type: string
           # Required: yes
           aws.region: ""
-          # AWSSecretAccessKey is the amazon secret access key
+          # The amazon secret access key
           # Type: string
           # Required: yes
           aws.secretAccessKey: ""
-          # MaxNumberOfMessages is the maximum number of messages to fetch from
-          # SQS in a single batch.
+          # The maximum number of messages to fetch from SQS in a single batch.
           # Type: int
           # Required: no
           aws.maxNumberOfMessages: "1"
-          # AWSURL is the URL for AWS (internal use only).
+          # The URL for AWS (internal use only).
           # Type: string
           # Required: no
           aws.url: ""
-          # VisibilityTimeout is the duration (in seconds) that the received
-          # messages are hidden from subsequent reads after being retrieved.
+          # The duration (in seconds) that the received messages are hidden from
+          # subsequent reads after being retrieved.
           # Type: int
           # Required: no
           aws.visibilityTimeout: "0"
-          # WaitTimeSeconds is the duration (in seconds) for which the call
-          # waits for a message to arrive in the queue before returning.
+          # The duration (in seconds) for which the call waits for a message to
+          # arrive in the queue before returning.
           # Type: int
           # Required: no
           aws.waitTimeSeconds: "10"
@@ -129,32 +128,32 @@ pipelines:
       - id: example
         plugin: "sqs"
         settings:
-          # AWSAccessKeyID is the amazon access key id
+          # The amazon access key id
           # Type: string
           # Required: yes
           aws.accessKeyId: ""
-          # AWSRegion is the amazon sqs region
+          # The amazon sqs region
           # Type: string
           # Required: yes
           aws.region: ""
-          # AWSSecretAccessKey is the amazon secret access key
+          # The amazon secret access key
           # Type: string
           # Required: yes
           aws.secretAccessKey: ""
-          # MessageDelay represents the length of time, in seconds, for which a
-          # specific message is delayed
+          # The length of time, in seconds, for which a specific message is
+          # delayed
           # Type: int
           # Required: no
           aws.delayTime: "0"
-          # QueueName is the sqs queue name
+          # The sqs queue name
           # Type: string
           # Required: no
           aws.queue: "{{ index .Metadata "opencdc.collection" }}"
-          # AWSURL is the URL for AWS (internal use only).
+          # The URL for AWS (internal use only).
           # Type: string
           # Required: no
           aws.url: ""
-          # BatchSize represents the amount of records written per batch
+          # The amount of records written per batch
           # Type: int
           # Required: no
           batchSize: "10"
