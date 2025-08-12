@@ -50,8 +50,8 @@ github.com/ashanbrown/makezero v1.2.0 h1:/2Lp1bypdmK9wDIq7uWBlDF1iMUpIIS4A+pF6C9
 github.com/ashanbrown/makezero v1.2.0/go.mod h1:dxlPhHbDMC6N6xICzFBSK+4njQDdK8euNO0qjQMtGY4=
 github.com/aws/aws-sdk-go-v2 v1.38.0 h1:UCRQ5mlqcFk9HJDIqENSLR3wiG1VTWlyUfLDEvY7RxU=
 github.com/aws/aws-sdk-go-v2 v1.38.0/go.mod h1:9Q0OoGQoboYIAJyslFyF1f5K1Ryddop8gqMhWx/n4Wg=
-github.com/aws/aws-sdk-go-v2/config v1.30.1 h1:sHL8g/+9tcZATeV2tEkEfxZeaNokDtKsSjGMGHD49qA=
-github.com/aws/aws-sdk-go-v2/config v1.30.1/go.mod h1:wkibEyFfxXRyTSzRU4bbF5IUsSXyE4xQ4ZjkGmi5tFo=
+github.com/aws/aws-sdk-go-v2/config v1.31.0 h1:9yH0xiY5fUnVNLRWO0AtayqwU1ndriZdN78LlhruJR4=
+github.com/aws/aws-sdk-go-v2/config v1.31.0/go.mod h1:VeV3K72nXnhbe4EuxxhzsDc/ByrCSlZwUnWH52Nde/I=
 github.com/aws/aws-sdk-go-v2/credentials v1.18.4 h1:IPd0Algf1b+Qy9BcDp0sCUcIWdCQPSzDoMK3a8pcbUM=
 github.com/aws/aws-sdk-go-v2/credentials v1.18.4/go.mod h1:nwg78FjH2qvsRM1EVZlX9WuGUJOL5od+0qvm0adEzHk=
 github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.3 h1:GicIdnekoJsjq9wqnvyi2elW6CGMSYKhdozE7/Svh78=
