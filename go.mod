@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.38.1
 	github.com/aws/aws-sdk-go-v2/config v1.31.2
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.6
-	github.com/aws/aws-sdk-go-v2/service/sqs v1.40.0
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.41.2
 	github.com/aws/smithy-go v1.22.5
 	github.com/conduitio/conduit-commons v0.6.0
 	github.com/conduitio/conduit-connector-sdk v0.14.1
