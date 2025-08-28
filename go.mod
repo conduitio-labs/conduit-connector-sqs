@@ -3,11 +3,11 @@ module github.com/conduitio-labs/conduit-connector-sqs
 go 1.24.2
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.38.1
+	github.com/aws/aws-sdk-go-v2 v1.38.2
 	github.com/aws/aws-sdk-go-v2/config v1.31.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.7
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.42.1
-	github.com/aws/smithy-go v1.22.5
+	github.com/aws/smithy-go v1.23.0
 	github.com/conduitio/conduit-commons v0.6.0
 	github.com/conduitio/conduit-connector-sdk v0.14.1
 	github.com/google/go-cmp v0.7.0
